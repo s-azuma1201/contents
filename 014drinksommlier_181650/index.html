@@ -1220,6 +1220,14 @@
                     ['redbull', 'レッドブル', 'ソフトドリンク', 700, 'highball', '#e8c94a', 1, 'sweet', '甘く刺激的な、エナジードリンク'],
                     ['redbull_sf', 'レッドブル シュガーフリー', 'ソフトドリンク', 700, 'highball', '#e8d070', 1, 'dry', '甘さ控えめのエナジードリンク']
                 ];
+                // ▼ 人気のドリンク（上ほど人気。「すべて見る」の一覧はこの順で上に並ぶ。ここにないものはメニュー順） ▼
+                const POPULAR_DRINKS = [
+                    'cassis_orange', 'gin_tonic', 'lemon_sour', 'kahlua_milk', 'fuzzy_navel', 'moscow_mule', 'jack', 'jager', 'peach_oolong',
+                    'cassis_soda', 'cocabomb', 'yebisu', 'heineken', 'rum_coke', 'screwdriver', 'salty_dog', 'china_blue', 'cuervo',
+                    'calpis_sour', 'gf_sour', 'cassis_oolong', 'lychee_gf', 'campari_orange', 'spumoni', 'amaretto_milk', 'sangria_red', 'hakushu', 'yamazaki',
+                    'oolong', 'cola', 'orange_j', 'ginger_sweet', 'calpis_soda', 'calpis', 'redbull', 'cafe_au_lait', 'pink_gf_j', 'jasmine_tea', 'ginger_dry', 'green_tea', 'apple_j', 'masala_chai'
+                ];
+                const popRank = (id) => { const i = POPULAR_DRINKS.indexOf(id); return i < 0 ? 999 : i; };
                 const SOFT_CATS = ['ソフトドリンク', 'ティー・コーヒー', 'ノンアルカクテル'];
                 const DRINKS = Object.fromEntries(DRINK_LIST.map(([id, name, cat, price, glass, color, fizz, profile, note]) =>
                     [id, { id, name, cat, price, glass, color, fizz: !!fizz, profile, note, soft: SOFT_CATS.includes(cat) }]));
@@ -1239,6 +1247,7 @@
                 // フレーバーは お店のフレーバーメニュー より。1つずつ、こう書きます：
                 //   n … フレーバー名 / en … 英語名 / note … ひとこと説明
                 //   sweet … 甘さ 1〜5 / cool … 清涼感 1〜5 / classic … 定番なら true（「王道派」の人に上位で出る）
+                //   pop … 人気度 0〜3（大きいほど、おすすめフレーバーの上位に出やすい。書かなければ 0）
                 //   mix … ミックスするならおすすめのフレーバー（なくてもOK）
                 const resultTypes = {
                     type1: {
@@ -1258,21 +1267,21 @@
                                 soft: [['saratoga', 'ライム×ジンジャーエールのノンアルカクテル。シトラス・ミントと同じ方向の爽快感。'],
                                        ['tonic_w', 'ほろ苦い炭酸が、柑橘の香りをキリッと引き締めます。']] },
                             contrast: { profile: 'rich',
-                                alc:  [['hakushu', '軽やかな煙に、森の若葉のように香るウイスキーで奥行きをプラス。爽やかさはそのままに大人の味わいに。'],
-                                       ['macallan', '爽やかな煙のあとに、シェリー樽の濃厚な甘い香り。軽い×濃いのメリハリが楽しめます。'],
-                                       ['jager', 'ハーブのリキュールで、ミントの清涼感に深みとコクを足して。']],
-                                soft: [['masala_chai', 'スパイスの効いたチャイで、爽やかな煙にコクをプラス。'],
-                                       ['earl_grey', 'ベルガモットが香る紅茶。シトラスの煙に、上品な深みを足します。']] }
+                                alc:  [['jack', 'バニラのような甘い樽の香りで、爽やかな煙に濃厚なコクを。軽い×濃いのメリハリが楽しめる人気の1杯。'],
+                                       ['jager', 'ハーブのリキュールで、ミントの清涼感に深みとコクを足して。'],
+                                       ['hakushu', '軽やかな煙に、森の若葉のように香るウイスキーで奥行きをプラス。爽やかさはそのままに大人の味わいに。']],
+                                soft: [['earl_grey', 'ベルガモットが香る紅茶。シトラスの煙に、上品な深みを足します。'],
+                                       ['masala_chai', 'スパイスの効いたチャイで、爽やかな煙にコクをプラス。']] }
                         },
                         groups: [
                             { name: 'シトラス', flavors: [
-                                { n: 'レモン', en: 'Lemon', note: 'キュッと甘酸っぱい、さわやかな王道シトラス', sweet: 2, cool: 3, classic: true,
+                                { n: 'レモン', en: 'Lemon', note: 'キュッと甘酸っぱい、さわやかな王道シトラス', sweet: 2, cool: 3, classic: true, pop: 3,
                                   mix: 'ミント' },
-                                { n: 'ライム', en: 'Lime', note: 'シャープでほろ苦い、キリッとした酸味', sweet: 1.5, cool: 3.5, classic: false,
+                                { n: 'ライム', en: 'Lime', note: 'シャープでほろ苦い、キリッとした酸味', sweet: 1.5, cool: 3.5, classic: false, pop: 1,
                                   mix: 'ミント（モヒート風）' },
-                                { n: 'ユズ', en: 'Yuzu', note: '和の柑橘。やさしい酸味と上品な香り', sweet: 2, cool: 2.5, classic: false,
+                                { n: 'ユズ', en: 'Yuzu', note: '和の柑橘。やさしい酸味と上品な香り', sweet: 2, cool: 2.5, classic: false, pop: 1,
                                   mix: 'ジャスミン' },
-                                { n: 'オレンジ', en: 'Orange', note: '甘くジューシーで、親しみやすい柑橘', sweet: 3, cool: 2, classic: true,
+                                { n: 'オレンジ', en: 'Orange', note: '甘くジューシーで、親しみやすい柑橘', sweet: 3, cool: 2, classic: true, pop: 2,
                                   mix: 'チョコ（オランジェット風）' },
                                 { n: 'キウイ', en: 'Kiwi', note: '甘酸っぱく青い、フレッシュな果実感', sweet: 2.5, cool: 2.5, classic: false,
                                   mix: 'ミント' }
@@ -1280,9 +1289,9 @@
                             { name: 'ミント・ハーブ', flavors: [
                                 { n: 'レモングラス', en: 'Lemongrass', note: 'レモンのようで青々しい、ハーブの爽快感', sweet: 1.5, cool: 3, classic: false,
                                   mix: 'ライム' },
-                                { n: 'モヒート', en: 'Mojito', note: 'ライム×ミントのカクテルそのもの。爽快感No.1', sweet: 2, cool: 4.5, classic: true,
+                                { n: 'モヒート', en: 'Mojito', note: 'ライム×ミントのカクテルそのもの。爽快感No.1', sweet: 2, cool: 4.5, classic: true, pop: 2,
                                   mix: 'レモン' },
-                                { n: 'ミント', en: 'Mint', note: 'スーッと抜ける清涼感。どのフレーバーとも相性◎', sweet: 1, cool: 5, classic: true,
+                                { n: 'ミント', en: 'Mint', note: 'スーッと抜ける清涼感。どのフレーバーとも相性◎', sweet: 1, cool: 5, classic: true, pop: 3,
                                   mix: 'チョコ（チョコミント）' }
                             ] }
                         ]
@@ -1298,37 +1307,37 @@
                         pairing: {
                             // 重ねる：フルーツ × フルーティー ／ 引き立てる：フルーツ × スッキリ
                             same: { profile: 'fruit',
-                                alc:  [['fuzzy_navel', '桃×オレンジのジューシーな甘さ。フルーツの煙と、果実どうしで自然につながります。'],
-                                       ['passoa_orange', 'パッションフルーツの甘酸っぱさで、トロピカル系フレーバーがさらに華やかに。'],
-                                       ['sangria_red', '果実を漬け込んだワイン。ぶどうやベリーの煙と香りが重なります。']],
-                                soft: [['shirley_temple', 'ザクロのシロップ×ジンジャーエール。甘く華やかで、フルーツの煙とよく合うノンアルカクテル。'],
-                                       ['pine_j', '甘酸っぱいパインで、果実の煙をもっとジューシーに。']] },
+                                alc:  [['cassis_orange', 'カシスとオレンジの甘酸っぱさが、果実の煙とそのまま重なる王道の組み合わせ。'],
+                                       ['fuzzy_navel', '桃×オレンジのジューシーな甘さ。フルーツの煙と、果実どうしで自然につながります。'],
+                                       ['passoa_orange', 'パッションフルーツの甘酸っぱさで、トロピカル系フレーバーがさらに華やかに。']],
+                                soft: [['orange_j', 'ジューシーなオレンジで、果実の煙をもっとフルーティーに。'],
+                                       ['shirley_temple', 'ザクロのシロップ×ジンジャーエール。甘く華やかで、フルーツの煙とよく合うノンアルカクテル。']] },
                             contrast: { profile: 'dry',
-                                alc:  [['campari_tonic', '甘いフルーツの煙を、ほろ苦いカンパリでキリッと引き締めて。甘さがいっそう引き立ちます。'],
-                                       ['gin_tonic', 'ドライなジントニックで、果実の甘さが口に残らず何服でも楽しめます。'],
+                                alc:  [['gin_tonic', 'ドライなジントニックで、果実の甘さが口に残らず何服でも楽しめます。'],
+                                       ['campari_tonic', '甘いフルーツの煙を、ほろ苦いカンパリでキリッと引き締めて。甘さがいっそう引き立ちます。'],
                                        ['salty_dog', '塩とグレープフルーツの酸味が、果実の甘さを引き立てる“スイカに塩”の発想。']],
-                                soft: [['tonic_w', 'ほろ苦いトニックで、甘い果実の煙をすっきりリセット。'],
-                                       ['oolong', '香ばしい烏龍茶で、フルーツの甘い後味をさっぱりと。']] }
+                                soft: [['oolong', '香ばしい烏龍茶で、フルーツの甘い後味をさっぱりと。'],
+                                       ['tonic_w', 'ほろ苦いトニックで、甘い果実の煙をすっきりリセット。']] }
                         },
                         groups: [
                             { name: 'トロピカル', flavors: [
-                                { n: 'パイン', en: 'Pineapple', note: '甘酸っぱく弾ける、南国の香り', sweet: 3.5, cool: 2, classic: true,
+                                { n: 'パイン', en: 'Pineapple', note: '甘酸っぱく弾ける、南国の香り', sweet: 3.5, cool: 2, classic: true, pop: 2,
                                   mix: 'ココナッツ' },
-                                { n: 'グアバ', en: 'Guava', note: '濃厚でトロピカル。ほんのり花のような甘い香り', sweet: 4, cool: 1.5, classic: false,
+                                { n: 'グアバ', en: 'Guava', note: '濃厚でトロピカル。ほんのり花のような甘い香り', sweet: 4, cool: 1.5, classic: false, pop: 1,
                                   mix: 'ミント' },
-                                { n: 'パッションフルーツ', en: 'Passion Fruit', note: '甘酸っぱさが際立つ、華やかなトロピカル', sweet: 3.5, cool: 2, classic: false,
+                                { n: 'パッションフルーツ', en: 'Passion Fruit', note: '甘酸っぱさが際立つ、華やかなトロピカル', sweet: 3.5, cool: 2, classic: false, pop: 1,
                                   mix: 'マンゴー' },
-                                { n: 'マンゴー', en: 'Mango', note: 'とろけるように濃厚で甘い、南国の女王', sweet: 4.5, cool: 1.5, classic: true,
+                                { n: 'マンゴー', en: 'Mango', note: 'とろけるように濃厚で甘い、南国の女王', sweet: 4.5, cool: 1.5, classic: true, pop: 2,
                                   mix: 'パッションフルーツ' },
                                 { n: 'ドラゴンフルーツ', en: 'Dragon Fruit', note: 'ほのかな甘さとみずみずしさ。クセのない南国果実', sweet: 3, cool: 2.5, classic: false,
                                   mix: 'ライチ' },
-                                { n: 'ライチ', en: 'Lychee', note: '華やかで上品。花のような香りの甘い果実', sweet: 3.5, cool: 2, classic: false,
+                                { n: 'ライチ', en: 'Lychee', note: '華やかで上品。花のような香りの甘い果実', sweet: 3.5, cool: 2, classic: false, pop: 2,
                                   mix: 'ローズ' }
                             ] },
                             { name: 'ベリー・赤い果実', flavors: [
-                                { n: 'ストロベリー', en: 'Strawberry', note: '甘酸っぱくてキュートな、いちごの香り', sweet: 4, cool: 1.5, classic: true,
+                                { n: 'ストロベリー', en: 'Strawberry', note: '甘酸っぱくてキュートな、いちごの香り', sweet: 4, cool: 1.5, classic: true, pop: 2,
                                   mix: 'バニラ（いちごミルク風）' },
-                                { n: 'ブルーベリー', en: 'Blueberry', note: '甘酸っぱくジャムのような、深みのあるベリー', sweet: 3.5, cool: 2, classic: false,
+                                { n: 'ブルーベリー', en: 'Blueberry', note: '甘酸っぱくジャムのような、深みのあるベリー', sweet: 3.5, cool: 2, classic: false, pop: 3,
                                   mix: 'ミント' },
                                 { n: 'ラズベリー', en: 'Raspberry', note: '酸味がきいた、華やかなベリー', sweet: 3, cool: 2, classic: false,
                                   mix: 'チョコ' },
@@ -1336,19 +1345,19 @@
                                   mix: 'ミント' },
                                 { n: 'チェリー', en: 'Cherry', note: '甘くてちょっぴりリキュールのような、熟した香り', sweet: 4, cool: 1.5, classic: false,
                                   mix: 'バニラ' },
-                                { n: 'グレープ', en: 'Grape', note: '甘く濃い、ぶどうジュースのような親しみやすさ', sweet: 4, cool: 1.5, classic: true,
+                                { n: 'グレープ', en: 'Grape', note: '甘く濃い、ぶどうジュースのような親しみやすさ', sweet: 4, cool: 1.5, classic: true, pop: 3,
                                   mix: 'ミント' }
                             ] },
                             { name: 'みずみずしい果実', flavors: [
-                                { n: 'アップル', en: 'Apple', note: 'みずみずしく甘酸っぱい、すっきりした青りんご', sweet: 3, cool: 2.5, classic: true,
+                                { n: 'アップル', en: 'Apple', note: 'みずみずしく甘酸っぱい、すっきりした青りんご', sweet: 3, cool: 2.5, classic: true, pop: 1,
                                   mix: 'ミント' },
                                 { n: 'ペア', en: 'Pear', note: 'やわらかく上品な甘さの、洋梨', sweet: 3, cool: 2, classic: false,
                                   mix: 'バニラ' },
-                                { n: 'ピーチ', en: 'Peach', note: 'やさしく甘い、とろける白桃の香り', sweet: 4, cool: 1.5, classic: true,
+                                { n: 'ピーチ', en: 'Peach', note: 'やさしく甘い、とろける白桃の香り', sweet: 4, cool: 1.5, classic: true, pop: 3,
                                   mix: 'ミント' },
                                 { n: 'アプリコット', en: 'Apricot', note: '甘酸っぱく、杏仁のような香ばしさもある杏', sweet: 3.5, cool: 1.5, classic: false,
                                   mix: 'バニラ' },
-                                { n: 'メロン', en: 'Melon', note: 'ジューシーで甘い、みずみずしいメロン', sweet: 4, cool: 2, classic: true,
+                                { n: 'メロン', en: 'Melon', note: 'ジューシーで甘い、みずみずしいメロン', sweet: 4, cool: 2, classic: true, pop: 1,
                                   mix: 'バニラ（クリームソーダ風）' },
                                 { n: 'スイカ', en: 'Watermelon', note: '夏らしい、みずみずしくさっぱりした甘さ', sweet: 2.5, cool: 3, classic: false,
                                   mix: 'ミント' }
@@ -1367,42 +1376,42 @@
                             // 重ねる：スイーツ × まろやか甘口 ／ 引き立てる：スイーツ × スッキリ
                             same: { profile: 'sweet',
                                 alc:  [['kahlua_milk', 'コーヒーリキュール×ミルク。デザートのような甘い煙と、まるでカフェのような組み合わせ。'],
-                                       ['amaretto_milk', '杏仁のような甘い香りで、バニラやピスタチオなどのスイーツ系にとろけるように合います。'],
-                                       ['rum_coke', 'ラムの甘い香りとコーラ。コーラやバニラのフレーバーと香りが重なります。']],
+                                       ['rum_coke', 'ラムの甘い香りとコーラ。コーラやバニラのフレーバーと香りが重なります。'],
+                                       ['amaretto_milk', '杏仁のような甘い香りで、バニラやピスタチオなどのスイーツ系にとろけるように合います。']],
                                 soft: [['cafe_au_lait', 'まろやかなミルクとコーヒー。チョコやキャラメル、カプチーノの煙と相性抜群。'],
-                                       ['choco_milk', '甘い煙に甘いミルク。とことんスイーツ気分を楽しみたい方に。']] },
+                                       ['cola', 'しゅわっと甘いコーラで、甘い煙と一緒にスイーツ気分を。バニラやチョコとも好相性。']] },
                             contrast: { profile: 'dry',
                                 alc:  [['lemon_sour', '甘い煙のあとに、レモンの酸味でさっぱりリセット。次のひと口がまたおいしく。'],
-                                       ['gin_rickey', '甘さ控えめのドライな後味で、甘い煙がしつこくなりません。'],
-                                       ['heineken', 'ビールの軽い苦みとキレで、濃い甘さを引き締めます。']],
-                                soft: [['soda_w', '甘さゼロの炭酸で口をリセット。甘い煙を何度でも新鮮に味わえます。'],
-                                       ['green_tea', '和の渋みで、甘い後味をすっきりと。和菓子とお茶のような関係です。']] }
+                                       ['heineken', 'ビールの軽い苦みとキレで、濃い甘さを引き締めます。'],
+                                       ['gin_rickey', '甘さ控えめのドライな後味で、甘い煙がしつこくなりません。']],
+                                soft: [['oolong', '香ばしい烏龍茶で、甘い後味をすっきりと。何服でも新鮮に楽しめます。'],
+                                       ['soda_w', '甘さゼロの炭酸で口をリセット。甘い煙を何度でも新鮮に味わえます。']] }
                         },
                         groups: [
                             { name: 'デザート', flavors: [
-                                { n: 'チョコ', en: 'Chocolate', note: 'ほろ苦く甘い、濃厚なチョコレート', sweet: 4, cool: 1, classic: true,
+                                { n: 'チョコ', en: 'Chocolate', note: 'ほろ苦く甘い、濃厚なチョコレート', sweet: 4, cool: 1, classic: true, pop: 2,
                                   mix: 'ミント（チョコミント）' },
-                                { n: 'バニラ', en: 'Vanilla', note: 'まろやかで甘い、アイスクリームのような香り', sweet: 4.5, cool: 1, classic: false,
+                                { n: 'バニラ', en: 'Vanilla', note: 'まろやかで甘い、アイスクリームのような香り', sweet: 4.5, cool: 1, classic: false, pop: 2,
                                   mix: 'コーラ' },
-                                { n: 'キャラメル', en: 'Caramel', note: '香ばしくとろける、焦がし砂糖の甘さ', sweet: 4.5, cool: 1, classic: false,
+                                { n: 'キャラメル', en: 'Caramel', note: '香ばしくとろける、焦がし砂糖の甘さ', sweet: 4.5, cool: 1, classic: false, pop: 1,
                                   mix: 'バニラ' },
-                                { n: 'ハニー', en: 'Honey', note: 'やさしく濃厚な、はちみつの甘さ', sweet: 4, cool: 1.5, classic: false,
+                                { n: 'ハニー', en: 'Honey', note: 'やさしく濃厚な、はちみつの甘さ', sweet: 4, cool: 1.5, classic: false, pop: 1,
                                   mix: 'レモン（はちみつレモン）' },
-                                { n: 'ヨーグルト', en: 'Yogurt', note: '甘酸っぱくまろやかな、乳酸飲料のような味', sweet: 3.5, cool: 1.5, classic: false,
+                                { n: 'ヨーグルト', en: 'Yogurt', note: '甘酸っぱくまろやかな、乳酸飲料のような味', sweet: 3.5, cool: 1.5, classic: false, pop: 2,
                                   mix: 'ストロベリー' },
-                                { n: 'ピスタチオ', en: 'Pistachio', note: 'ナッツの香ばしさと、まろやかなコク', sweet: 3.5, cool: 1, classic: false,
+                                { n: 'ピスタチオ', en: 'Pistachio', note: 'ナッツの香ばしさと、まろやかなコク', sweet: 3.5, cool: 1, classic: false, pop: 1,
                                   mix: 'バニラ' },
                                 { n: 'ココナッツ', en: 'Coconut', note: '甘くミルキーな、南国のココナッツ', sweet: 4, cool: 1.5, classic: false,
                                   mix: 'パイン' }
                             ] },
                             { name: 'ドリンク', flavors: [
-                                { n: 'コーラ（ツイスト）', en: 'Cola', note: 'しゅわっと甘い、コーラそのもの', sweet: 4, cool: 2.5, classic: true,
+                                { n: 'コーラ（ツイスト）', en: 'Cola', note: 'しゅわっと甘い、コーラそのもの', sweet: 4, cool: 2.5, classic: true, pop: 2,
                                   mix: 'レモン' },
                                 { n: 'ジンジャーエール', en: 'Ginger Ale', note: 'ピリッと甘い、生姜の刺激', sweet: 3, cool: 3, classic: false,
                                   mix: 'レモン' },
                                 { n: 'カプチーノ', en: 'Cappuccino', note: 'ミルクの泡とエスプレッソ。ほろ苦く甘い香り', sweet: 3.5, cool: 1, classic: false,
                                   mix: 'キャラメル' },
-                                { n: 'ミルク', en: 'Milk', note: 'まろやかでやさしい、ミルキーな甘さ', sweet: 3.5, cool: 1, classic: false,
+                                { n: 'ミルク', en: 'Milk', note: 'まろやかでやさしい、ミルキーな甘さ', sweet: 3.5, cool: 1, classic: false, pop: 1,
                                   mix: 'アールグレイ（ミルクティー）' }
                             ] }
                         ]
@@ -1424,35 +1433,35 @@
                                 soft: [['masala_chai', 'スパイスが香るミルクティー。カルダモンやシナモンの煙と、香りがきれいに重なります。'],
                                        ['earl_grey', 'ベルガモットが香る紅茶。アールグレイやお花系の煙にぴったり。']] },
                             contrast: { profile: 'fruit',
-                                alc:  [['sangria_white', '果実を漬け込んだ白ワインのやさしい甘さで、スパイスの煙をまろやかに。'],
-                                       ['misty_apple', 'マスカット×りんごのみずみずしさで、エキゾチックな香りを軽やかに。'],
-                                       ['lychee_orange', 'ライチの華やかさとオレンジの甘さで、お花やスパイスの香りが明るく引き立ちます。']],
+                                alc:  [['cassis_orange', 'カシスオレンジの甘酸っぱさで、エキゾチックな煙を親しみやすく。'],
+                                       ['sangria_white', '果実を漬け込んだ白ワインのやさしい甘さで、スパイスの煙をまろやかに。'],
+                                       ['misty_apple', 'マスカット×りんごのみずみずしさで、エキゾチックな香りを軽やかに。']],
                                 soft: [['apple_j', 'りんごの甘さは、シナモンやWアップルなどのスパイスと好相性。'],
                                        ['orange_j', 'ジューシーなオレンジで、エキゾチックな煙を親しみやすく。']] }
                         },
                         groups: [
                             { name: 'スパイス', flavors: [
-                                { n: 'Wアップル', en: 'Double Apple', note: 'アニスが香る、シーシャ伝統の王道フレーバー', sweet: 3, cool: 1.5, classic: true,
+                                { n: 'Wアップル', en: 'Double Apple', note: 'アニスが香る、シーシャ伝統の王道フレーバー', sweet: 3, cool: 1.5, classic: true, pop: 3,
                                   mix: 'ミント' },
-                                { n: 'パンラズナ', en: 'Pan Rasna', note: 'インドの口直し“パーン”のような、甘くスパイシーで清涼な香り', sweet: 3, cool: 3, classic: false,
+                                { n: 'パンラズナ', en: 'Pan Rasna', note: 'インドの口直し“パーン”のような、甘くスパイシーで清涼な香り', sweet: 3, cool: 3, classic: false, pop: 1,
                                   mix: 'ミント' },
-                                { n: 'カルダモン', en: 'Cardamom', note: 'すっと爽やかで甘いスパイス。チャイの香り', sweet: 2.5, cool: 2.5, classic: false,
+                                { n: 'カルダモン', en: 'Cardamom', note: 'すっと爽やかで甘いスパイス。チャイの香り', sweet: 2.5, cool: 2.5, classic: false, pop: 1,
                                   mix: 'ミルク' },
                                 { n: 'カシミール', en: 'Kashmir', note: 'スパイスが幾重にも重なる、深くエキゾチックな香り', sweet: 2.5, cool: 2, classic: false,
                                   mix: 'ミルク' },
-                                { n: 'シナモン', en: 'Cinnamon', note: '甘くあたたかい、焼き菓子のようなスパイス', sweet: 3, cool: 1.5, classic: false,
+                                { n: 'シナモン', en: 'Cinnamon', note: '甘くあたたかい、焼き菓子のようなスパイス', sweet: 3, cool: 1.5, classic: false, pop: 1,
                                   mix: 'アップル（アップルパイ風）' },
                                 { n: 'ボムシェル', en: 'Bombshell', note: '個性的な香りのブレンド。どんな香りか、スタッフにお気軽に', sweet: 3, cool: 2, classic: false,
                                   mix: '' }
                             ] },
                             { name: 'フラワー・ティー', flavors: [
-                                { n: 'ジャスミン', en: 'Jasmine', note: '華やかで上品な、ジャスミンの花の香り', sweet: 2, cool: 2.5, classic: false,
+                                { n: 'ジャスミン', en: 'Jasmine', note: '華やかで上品な、ジャスミンの花の香り', sweet: 2, cool: 2.5, classic: false, pop: 2,
                                   mix: 'ライチ' },
-                                { n: 'ローズ', en: 'Rose', note: '甘く気品のある、バラの花の香り', sweet: 3, cool: 1.5, classic: false,
+                                { n: 'ローズ', en: 'Rose', note: '甘く気品のある、バラの花の香り', sweet: 3, cool: 1.5, classic: false, pop: 1,
                                   mix: 'ライチ' },
-                                { n: 'ホワイトムスク', en: 'White Musk', note: '石けんのように清潔で、やわらかく甘い香り', sweet: 2.5, cool: 2, classic: false,
+                                { n: 'ホワイトムスク', en: 'White Musk', note: '石けんのように清潔で、やわらかく甘い香り', sweet: 2.5, cool: 2, classic: false, pop: 1,
                                   mix: 'ピーチ' },
-                                { n: 'アールグレイ', en: 'Earl Grey', note: 'ベルガモットが香る、気品ある紅茶', sweet: 2, cool: 2, classic: true,
+                                { n: 'アールグレイ', en: 'Earl Grey', note: 'ベルガモットが香る、気品ある紅茶', sweet: 2, cool: 2, classic: true, pop: 2,
                                   mix: 'ミルク（ミルクティー）' },
                                 { n: 'ベルガモットティー', en: 'Bergamot Tea', note: '柑橘のベルガモットが際立つ、爽やかなフレーバーティー', sweet: 2, cool: 2.5, classic: false,
                                   mix: 'レモン' }
@@ -1511,13 +1520,14 @@
                 const typeTheme = computed(() => TYPE_THEMES[finalResult.value ? finalResult.value.id : 'type1']);
 
                 // ▼ フレーバーを選ぶ ▼
-                // 回答からフレーバーの並び順を決める（王道派なら定番、甘い派なら甘め、キレ派なら清涼感のあるものを上位に）
+                // 回答と人気度からフレーバーの並び順を決める（人気のもの＋王道派なら定番、甘い派なら甘め、キレ派なら清涼感のあるものを上位に）
                 const flavorScore = (f) => {
                     const a = answersHistory.value;
                     let s = 0;
                     s += a[7] === 'A' ? (f.classic ? 2 : 0) : (f.classic ? 0 : 1.5);   // Q8 王道 / 個性
                     s += a[5] === 'A' ? f.sweet * 0.6 : (5 - f.sweet) * 0.6;          // Q6 甘い / ドライ
                     s += a[6] === 'A' ? f.cool * 0.6 : (5 - f.cool) * 0.4;            // Q7 キレ / なめらか
+                    s += (f.pop || 0) * 1.5;                                          // 人気のフレーバーを上位に
                     return s;
                 };
                 const topPicks = computed(() => {
@@ -1548,6 +1558,7 @@
                     const picks = (r[soft ? 'soft' : 'alc'] || []).filter(([id]) => DRINKS[id]).map(([id, why]) => ({ ...DRINKS[id], why, pick: true }));
                     const rest = DRINK_LIST.map(d => DRINKS[d[0]])
                         .filter(d => d.soft === soft && d.profile === r.profile && !picks.some(p => p.id === d.id))
+                        .sort((x, y) => popRank(x.id) - popRank(y.id))   // 人気のものを上に（同じならメニュー順）
                         .map(d => ({ ...d, pick: false }));
                     return [...picks, ...rest];
                 });
