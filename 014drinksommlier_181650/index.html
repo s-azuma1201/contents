@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -379,7 +378,7 @@
 <body class="app-body m-0 p-0 overflow-hidden relative">
 
     <!-- ▼ 背景：遺跡のレリーフの壁（うっすら） ＋ ゆっくり漂う煙 ▼ -->
-    <img src="relief.webp" alt="" class="bg-relief" aria-hidden="true" onerror="this.style.display='none'">
+    <img src="image/relief.webp" alt="" class="bg-relief" aria-hidden="true" onerror="this.style.display='none'">
     <canvas id="smokeCanvas" aria-hidden="true"></canvas>
 
     <!-- ▼ メインコンテンツ ▼ -->
@@ -393,7 +392,7 @@
             <div v-else-if="step === 'start'" key="start" class="ruin-card w-full max-w-lg my-auto rounded-xl overflow-hidden flex flex-col items-center text-center">
                 <!-- 遺跡のレリーフ（店内の壁）を背景に、ロゴ -->
                 <div class="relief-band w-full">
-                    <img src="relief.webp" alt="" class="relief-photo" @error="handleImageError">
+                    <img src="image/relief.webp" alt="" class="relief-photo" @error="handleImageError">
                     <brand-logo class="relief-logo text-[40px]"></brand-logo>
                 </div>
                 <div class="px-6 sm:px-8 pt-2 pb-7 w-full flex flex-col items-center">
@@ -684,7 +683,7 @@
 
                 <!-- お店の写真の帯（遺跡のレリーフ） -->
                 <div class="shop-band" aria-hidden="true">
-                    <img src="interior.webp" alt="" class="shop-band-photo" @error="handleImageError">
+                    <img src="image/interior.webp" alt="" class="shop-band-photo" @error="handleImageError">
                     <brand-logo class="shop-band-logo text-[22px]"></brand-logo>
                 </div>
 
@@ -798,7 +797,7 @@
 
         <!-- ▼ オープニング（約2秒）：暗闇に青い灯りがさし、遺跡の壁と 煙匠 のロゴが浮かび上がる。タップでとばせる ▼ -->
         <div v-if="openingStage" class="opening" :class="'opening-' + openingStage" role="button" tabindex="0" aria-label="はじめる" @click="finishOpening" @keydown.enter="finishOpening">
-            <img src="relief.webp" alt="" class="opening-relief" @error="handleImageError">
+            <img src="image/relief.webp" alt="" class="opening-relief" @error="handleImageError">
             <div class="opening-light" aria-hidden="true"></div>
             <div class="opening-smoke" aria-hidden="true"></div>
             <div class="opening-stack">
@@ -944,8 +943,8 @@
                     {
                         text: 'あなたの性別をお聞かせください',
                         options: [
-                            { text: '男性', img: 'seibetuotoko.webp', type: 'A' },
-                            { text: '女性', img: 'seibetuonna.webp', type: 'B' }
+                            { text: '男性', img: 'image/seibetuotoko.webp', type: 'A' },
+                            { text: '女性', img: 'image/seibetuonna.webp', type: 'B' }
                         ]
                     },
                     {
@@ -958,43 +957,43 @@
                     {
                         text: '今日の気分は？',
                         options: [
-                            { text: 'スカッと弾けて今日をリセットしたい！', img: 'okiru.webp', type: 'A', react: 'リセットしたい日、ありますよね！' },
-                            { text: '静かにほっこり今日を癒やしたい…', img: 'yasumu.webp', type: 'B', react: 'ほっこりいきましょう…' }
+                            { text: 'スカッと弾けて今日をリセットしたい！', img: 'image/okiru.webp', type: 'A', react: 'リセットしたい日、ありますよね！' },
+                            { text: '静かにほっこり今日を癒やしたい…', img: 'image/yasumu.webp', type: 'B', react: 'ほっこりいきましょう…' }
                         ]
                     },
                     {
                         text: '今、食べたい気分なのは？',
                         options: [
-                            { text: 'ガッツリなお肉や揚げ物', img: '2-2.webp', type: 'A', react: 'ガッツリ、いいですね！' },
-                            { text: 'ヘルシーなお刺身や野菜', img: '2-1.webp', type: 'B', react: 'さっぱりヘルシー派ですね' }
+                            { text: 'ガッツリなお肉や揚げ物', img: 'image/2-2.webp', type: 'A', react: 'ガッツリ、いいですね！' },
+                            { text: 'ヘルシーなお刺身や野菜', img: 'image/2-1.webp', type: 'B', react: 'さっぱりヘルシー派ですね' }
                         ]
                     },
                     {
                         text: 'ふと嗅ぎたい、惹かれる香りは？',
                         options: [
-                            { text: 'みずみずしい柑橘やフルーティーな香り', img: '3-1.webp', type: 'A', react: '柑橘・フルーツ派ですね！' },
-                            { text: 'スパイシーな香辛料やハーブ・木の香り', img: '3-2.webp', type: 'B', react: 'スパイス・ハーブ派、通ですね' }
+                            { text: 'みずみずしい柑橘やフルーティーな香り', img: 'image/3-1.webp', type: 'A', react: '柑橘・フルーツ派ですね！' },
+                            { text: 'スパイシーな香辛料やハーブ・木の香り', img: 'image/3-2.webp', type: 'B', react: 'スパイス・ハーブ派、通ですね' }
                         ]
                     },
                     {
                         text: '今の口が一番求めているのは？',
                         options: [
-                            { text: 'やさしい甘み、フルーティーな甘酸っぱさ', img: '4-1.webp', type: 'A', react: 'やさしい甘み、癒やされます' },
-                            { text: 'キリッとした苦み、ドライで控えめな甘さ', img: '4-2.webp', type: 'B', react: 'キリッとドライ、大人ですね' }
+                            { text: 'やさしい甘み、フルーティーな甘酸っぱさ', img: 'image/4-1.webp', type: 'A', react: 'やさしい甘み、癒やされます' },
+                            { text: 'キリッとした苦み、ドライで控えめな甘さ', img: 'image/4-2.webp', type: 'B', react: 'キリッとドライ、大人ですね' }
                         ]
                     },
                     {
                         text: '喉を通るときの好みは？',
                         options: [
-                            { text: 'キリッと締まる爽快なキレ', img: 'awa.webp', type: 'A', react: '爽快なキレ、たまりません！' },
-                            { text: 'すーっと通るなめらかな口当たり', img: 'nameraka.webp', type: 'B', react: 'なめらか派ですね' }
+                            { text: 'キリッと締まる爽快なキレ', img: 'image/awa.webp', type: 'A', react: '爽快なキレ、たまりません！' },
+                            { text: 'すーっと通るなめらかな口当たり', img: 'image/nameraka.webp', type: 'B', react: 'なめらか派ですね' }
                         ]
                     },
                     {
                         text: '今日のフレーバー選びのテーマは？',
                         options: [
-                            { text: '失敗したくない！王道定番派', img: 'ousama.webp', type: 'A', react: '王道、間違いなしです！' },
-                            { text: '新しい発見がほしい！個性的派', img: 'bouken.webp', type: 'B', react: '新しい出会いを探しましょう！' }
+                            { text: '失敗したくない！王道定番派', img: 'image/ousama.webp', type: 'A', react: '王道、間違いなしです！' },
+                            { text: '新しい発見がほしい！個性的派', img: 'image/bouken.webp', type: 'B', react: '新しい出会いを探しましょう！' }
                         ]
                     }
                 ];
