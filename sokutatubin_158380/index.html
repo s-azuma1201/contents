@@ -205,10 +205,10 @@ button { font-family: inherit; color: inherit; border: 0; background: none; curs
 .story-btn { padding: 10px 18px; border-radius: 999px; font-size: 14px; font-weight: 700; letter-spacing: .12em; border: 1px solid rgba(255,255,255,.3); background: rgba(255,255,255,.08); }
 .story-btn:disabled { opacity: .3; }
 .story-btn.primary { background: linear-gradient(180deg, #ffe58f, var(--gold) 45%, var(--amber)); color: #2a1600; border-color: transparent; font-weight: 900; }
-.dash-btn { padding: 12px 20px; font-size: 16px; font-weight: 900; letter-spacing: .06em; color: #fff; border: 0; background: linear-gradient(180deg, #ff6a5c, #e5322d 55%, #b81f1b); box-shadow: 0 6px 16px rgba(229,50,45,.45), inset 0 1px 0 rgba(255,255,255,.4); animation: dashPulse 1.6s ease-in-out infinite; touch-action: manipulation; }
+.dash-btn { padding: 12px 20px; font-size: 16px; font-weight: 900; letter-spacing: .06em; color: #2a1600; border: 0; background: linear-gradient(180deg, #ffe58f, var(--gold) 45%, var(--amber)); box-shadow: 0 6px 16px rgba(255,197,61,.45), inset 0 1px 0 rgba(255,255,255,.6); animation: dashPulse 1.6s ease-in-out infinite; touch-action: manipulation; }
 .dash-btn:active, .dash-btn.boost { transform: scale(.94); animation: none; }
 .dash-btn[hidden], .go-btn[hidden] { display: none; }
-@keyframes dashPulse { 50% { box-shadow: 0 6px 22px rgba(229,50,45,.8), 0 0 0 6px rgba(229,50,45,.18), inset 0 1px 0 rgba(255,255,255,.4); } }
+@keyframes dashPulse { 50% { box-shadow: 0 6px 22px rgba(255,197,61,.8), 0 0 0 6px rgba(255,197,61,.2), inset 0 1px 0 rgba(255,255,255,.6); } }
 .go-btn { padding: 12px 22px; font-size: 16px; animation: goIn .5s cubic-bezier(.3,1.6,.5,1) both; }
 @keyframes goIn { from { opacity: 0; transform: scale(.7); } }
 .controls .hint { margin-left: auto; font-size: 11px; letter-spacing: .1em; color: rgba(255,255,255,.6); }
@@ -323,7 +323,11 @@ button { font-family: inherit; color: inherit; border: 0; background: none; curs
 /* ▼ カオハメ ▼ */
 #s-kao { padding-top: max(16px, env(safe-area-inset-top)); }
 #s-kao .qa, #s-card .card-wrap { margin: auto 0; }
-.kao-wrap { border-radius: 14px; overflow: hidden; box-shadow: 0 18px 40px -10px rgba(0,0,0,.8), 0 0 0 2px rgba(255,197,61,.5); }
+#s-kao [hidden] { display: none !important; }
+.shutter-btn { animation: dashPulse 1.4s ease-in-out infinite; }
+.kao-wrap.snap::after { content: ''; position: absolute; inset: 0; background: #fff; animation: snapFlash .45s ease-out forwards; pointer-events: none; }
+@keyframes snapFlash { from { opacity: 1; } to { opacity: 0; } }
+.kao-wrap { position: relative; border-radius: 14px; overflow: hidden; box-shadow: 0 18px 40px -10px rgba(0,0,0,.8), 0 0 0 2px rgba(255,197,61,.5); }
 #kaoCv { display: block; width: 100%; touch-action: none; cursor: grab; }
 .kao-zoom { display: flex; align-items: center; gap: 10px; margin: 12px 4px 0; font-size: 12px; font-weight: 900; color: #c9cde0; }
 .kao-zoom input { flex: 1; accent-color: var(--gold); }
@@ -504,7 +508,9 @@ button { font-family: inherit; color: inherit; border: 0; background: none; curs
             <div class="kao-zoom" id="kaoZoomRow" hidden><span>小</span><input type="range" id="kaoZoom" min="0.6" max="3" step="0.01" value="1.1" aria-label="顔の大きさ"><span>大</span></div>
             <p class="op-note" id="kaoNote">「写真を撮る」で、顔の部分に自分が入ります</p>
             <div class="card-actions">
-                <label class="btn-vino photo-btn">📸 写真を撮る<input type="file" accept="image/*" capture="user" id="kaoCam" hidden></label>
+                <button class="btn-vino" id="kaoCamBtn">📸 カメラで撮る</button>
+                <button class="btn-vino shutter-btn" id="kaoShot" hidden>📸 パシャ！</button>
+                <label class="btn-ghost photo-btn">🖼 画像から選ぶ<input type="file" accept="image/*" id="kaoCam" hidden></label>
                 <button class="btn-vino" id="kaoDone" hidden>この写真でカードにする ›</button>
                 <button class="btn-ghost" data-go="card" id="kaoSkip">写真なしでカードにする ›</button>
                 <p class="op-note">※ 写真はこの端末の中だけで使い、どこにも送信しません</p>
@@ -748,7 +754,7 @@ function shopStop(k, d) {   // shop.js の1か所ぶんを、走るための形�
         whole: !!d.menu,
         memoLabel: d.menu ? 'ここがポイント' : '歴史メモ',   // メニュー紹介（menu: 'ドリンク' など）は、写真を切らずにそのまま
         pops: [...(d.photo ? [{ photo: d.photo, credit: d.credit, tencho: d.tencho }] : []), ...(d.photos || [])]
-            .map(p => ({ src: photoUrl(p.photo), credit: p.credit || '', caption: p.caption || '', tag: p.tag || d.menu || '' })) };
+            .map(p => ({ src: photoUrl(p.photo), credit: p.credit || '', caption: p.caption || '', tag: p.tag || '' })) };
 }
 function goalStop(k) {   // 最後に着くお店
     const g = SHOP.goal || {}, bg = g.bg || 'tg', imgs = loadBg(bg) || {};
@@ -813,7 +819,7 @@ function show(name) {
     if (name === 'pour') Pour.start();
     if (name === 'cheers') renderCheers();
     if (name === 'card') MyCard.start(); else if (typeof MyCard !== 'undefined') MyCard.stop();
-    if (name === 'kao') Kao.start();
+    if (name === 'kao') Kao.start(); else { try { Kao.stop(); } catch (_) {} }   // 他の画面ではカメラを止める
 }
 document.addEventListener('click', (e) => {
     const b = e.target.closest('[data-go]');
@@ -1710,6 +1716,42 @@ function renderCheers() { Cheers.start(); }
 const Kao = (() => {
     const cv = $('kaoCv');
     let face = null, fx = 0, fy = 0, zoom = 1.1, drag = null;
+    // カメラ（撮る前は、カメラの映像をそのまま写真の枠に映す）
+    let stream = null, live = false, liveRaf = 0;
+    const video = document.createElement('video'); video.playsInline = true; video.muted = true; video.setAttribute('playsinline', '');
+    const dimW = (m) => m.videoWidth || m.naturalWidth || m.width, dimH = (m) => m.videoHeight || m.naturalHeight || m.height;
+    function drawFace(c, cx, cy, bw, bh, u) {   // 枠（中心 cx,cy・大きさ bw×bh）に顔をうめる。カメラ中は鏡のように左右反転
+        const m = live && video.videoWidth ? video : face; if (!m) return false;
+        const k = Math.max(bw / dimW(m), bh / dimH(m)) * zoom, fw = dimW(m) * k, fh = dimH(m) * k;
+        c.save(); c.translate(cx + fx * u, cy + fy * u); if (m === video) c.scale(-1, 1);
+        c.drawImage(m, -fw / 2, -fh / 2, fw, fh); c.restore(); return true;
+    }
+    function stopCam() { live = false; cancelAnimationFrame(liveRaf); if (stream) stream.getTracks().forEach(t => t.stop()); stream = null; video.srcObject = null; $('kaoShot').hidden = true; $('kaoCamBtn').hidden = false; }
+    async function startCam() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { $('kaoCam').click(); return; }   // カメラが使えない端末は、画像から選ぶ
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 1280 } }, audio: false });
+        } catch (e) { $('kaoNote').textContent = 'カメラが使えませんでした。「画像から選ぶ」で写真を入れてね'; return; }
+        video.srcObject = stream; try { await video.play(); } catch (_) {}
+        live = true; fx = 0; fy = 0; zoom = 1.1; $('kaoZoom').value = 1.1;
+        $('kaoCamBtn').hidden = true; $('kaoShot').hidden = false; $('kaoZoomRow').hidden = true;
+        $('kaoNote').textContent = 'カメラに顔をうつして「パシャ！」';
+        const tick = () => { if (!live) return; render(); liveRaf = requestAnimationFrame(tick); }; tick();
+    }
+    function shoot() {   // いまの映像を写真にする（鏡のように左右反転したまま）
+        if (!live || !video.videoWidth) return;
+        const c = document.createElement('canvas'); c.width = video.videoWidth; c.height = video.videoHeight;
+        const x = c.getContext('2d'); x.translate(c.width, 0); x.scale(-1, 1); x.drawImage(video, 0, 0);
+        stopCam(); setFace(c);
+        const w = cv.parentElement; w.classList.remove('snap'); void w.offsetWidth; w.classList.add('snap');
+        $('kaoCamBtn').textContent = '📸 撮りなおす';
+    }
+    function setFace(m) {
+        face = m; fx = 0; fy = 0; zoom = 1.1; $('kaoZoom').value = 1.1; $('kaoZoomRow').hidden = false; $('kaoDone').hidden = false; $('kaoSkip').hidden = true;
+        $('kaoNote').textContent = '写真をドラッグで位置、スライダーで大きさを合わせてね'; render();
+    }
+    $('kaoCamBtn').addEventListener('click', startCam);
+    $('kaoShot').addEventListener('click', shoot);
     // 体のイラスト（顔とジョッキの部分を透明にぬいたもの）。HOLE … 顔の穴の中心と半径／GRIP … にぎった手（ジョッキの取っ手を持たせる位置）
     const BODY = new Image(); BODY.src = IMG_DIR + 'kaohame_body.webp';
     const BODY_W = 690, BODY_H = 662,   // 胴体だけ（足はなし）
@@ -1730,8 +1772,10 @@ const Kao = (() => {
     function cheki(c, X, Y, W, H, sp) {
         const u = H / 736;
         c.save(); c.beginPath(); c.rect(X, Y, W, H); c.clip();
-        if (sp.complete && sp.naturalWidth) drawWhole(c, sp, X, Y, W, H, 0.08);   // 背景：お店の外観を全部見せる（右はチェキ用に空ける）
-        else { c.fillStyle = '#3a2a22'; c.fillRect(X, Y, W, H); }
+        if (sp.complete && sp.naturalWidth) {   // 背景：お店の写真（はみ出しは切る。看板が見えるよう少し上より）
+            const iw = sp.naturalWidth, ih = sp.naturalHeight, k = Math.max(W / iw, H / ih), dw = iw * k, dh = ih * k;
+            c.drawImage(sp, X + (W - dw) / 2, Y + (H - dh) * 0.3, dw, dh);
+        } else { c.fillStyle = '#3a2a22'; c.fillRect(X, Y, W, H); }
         const vg = c.createLinearGradient(0, Y + H * 0.55, 0, Y + H); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.35)');
         c.fillStyle = vg; c.fillRect(X, Y, W, H);
         // チェキ（スクエア判：72×86。写真は 62×62）
@@ -1743,9 +1787,7 @@ const Kao = (() => {
         const px = -cw / 2 + m, py = -ch / 2 + m;
         c.save(); c.beginPath(); c.rect(px, py, pw, ph); c.clip();
         c.fillStyle = '#16131a'; c.fillRect(px, py, pw, ph);
-        if (face) {
-            const k = Math.max(pw / face.naturalWidth, ph / face.naturalHeight) * zoom, fw = face.naturalWidth * k, fh = face.naturalHeight * k;
-            c.drawImage(face, px + (pw - fw) / 2 + fx * u, py + (ph - fh) / 2 + fy * u, fw, fh);
+        if (drawFace(c, px + pw / 2, py + ph / 2, pw, ph, u)) {
             const gl = c.createLinearGradient(px, py, px + pw, py + ph); gl.addColorStop(0, 'rgba(255,255,255,.12)'); gl.addColorStop(.5, 'rgba(255,255,255,0)');
             c.fillStyle = gl; c.fillRect(px, py, pw, ph);
         } else {
@@ -1785,10 +1827,9 @@ const Kao = (() => {
         // 顔（体の上に、大きな楕円で）
         c.save(); c.shadowColor = 'rgba(0,0,0,.35)'; c.shadowBlur = 10 * u; c.shadowOffsetY = 4 * u;
         c.fillStyle = '#fffdf6'; c.beginPath(); c.ellipse(hx, hy, rx + 7 * u, ry + 7 * u, 0, 0, 7); c.fill(); c.restore();
-        if (face) {
+        if (face || live) {
             c.save(); c.beginPath(); c.ellipse(hx, hy, rx, ry, 0, 0, 7); c.clip();
-            const k = Math.max(rx * 2 / face.naturalWidth, ry * 2 / face.naturalHeight) * zoom, fw = face.naturalWidth * k, fh = face.naturalHeight * k;
-            c.drawImage(face, hx - fw / 2 + fx * u, hy - fh / 2 + fy * u, fw, fh); c.restore();
+            drawFace(c, hx, hy, rx * 2, ry * 2, u); c.restore();
         } else {
             c.fillStyle = '#000'; c.beginPath(); c.ellipse(hx, hy, rx, ry, 0, 0, 7); c.fill();   // 写真を撮るまでは、まっ黒
         }
@@ -1809,20 +1850,23 @@ const Kao = (() => {
     function load(e) {
         const f = e.target.files && e.target.files[0]; if (!f) return;
         const rd = new FileReader();
-        rd.onload = () => { const im = new Image(); im.onload = () => { face = im; fx = 0; fy = 0; zoom = 1.1; $('kaoZoom').value = 1.1; $('kaoZoomRow').hidden = false; $('kaoDone').hidden = false; $('kaoSkip').hidden = true; $('kaoNote').textContent = '写真をドラッグで位置、スライダーで大きさを合わせてね'; render(); }; im.src = rd.result; };
+        stopCam();
+        rd.onload = () => { const im = new Image(); im.onload = () => setFace(im); im.src = rd.result; };
         rd.readAsDataURL(f); e.target.value = '';
     }
     $('kaoCam').addEventListener('change', load);
     $('kaoZoom').addEventListener('input', (e) => { zoom = +e.target.value; render(); });
-    cv.addEventListener('pointerdown', (e) => { if (!face) return; drag = { x: e.clientX, y: e.clientY, fx, fy }; try { cv.setPointerCapture(e.pointerId); } catch (_) {} });
+    cv.addEventListener('pointerdown', (e) => { if (!face || live) return; drag = { x: e.clientX, y: e.clientY, fx, fy }; try { cv.setPointerCapture(e.pointerId); } catch (_) {} });
     cv.addEventListener('pointermove', (e) => { if (!drag) return; const k = 736 / cv.clientHeight; fx = drag.fx + (e.clientX - drag.x) * k; fy = drag.fy + (e.clientY - drag.y) * k; render(); });
     cv.addEventListener('pointerup', () => { drag = null; });
     $('kaoDone').addEventListener('click', () => show('card'));
+    document.addEventListener('visibilitychange', () => { if (document.hidden) stopCam(); });
     return {
         start() {
-            if (shopPhoto() && !face) $('kaoNote').textContent = '「写真を撮る」で、チェキ風の写真が右下に入ります';
+            if (!face) $('kaoNote').textContent = shopPhoto() ? '「カメラで撮る」で、チェキ風の写真が右下に入ります' : '「カメラで撮る」で、顔の部分に自分が入ります';
             requestAnimationFrame(() => (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(render)); },
         hasFace() { return !!face; },
+        stop: stopCam,
         draw(c, x, y, w, h) { board(c, x, y, w, h); }
     };
 })();
@@ -1874,7 +1918,7 @@ const MyCard = (() => {
         c.save(); rr(c, ax, ay, aw, ah, 14 * u); c.clip();
         const gim = goal && goal.im && goal.im.ok ? goal.im : null;
         const photo = cardPhoto && cardPhoto.complete && cardPhoto.naturalWidth ? cardPhoto : null;   // お店の外観写真があれば、そちらを使う
-        if (photo) drawWhole(c, photo, ax, ay, aw, ah, .5);   // お店の外観が全部見えるように（引きで）
+        if (photo) cover(c, photo, ax, ay, aw, ah, .5, .5);
         else if (gim) {   // お店の画像から、お店の建物まわりを大きく切りだす（色はかけない）
             const nw = gim.naturalWidth, nh = gim.naturalHeight, sh = nh * 0.8, sw = sh * aw / ah;
             c.drawImage(gim, clamp(nw * (goal.focus || .5) - sw / 2, 0, nw - sw), 0, sw, sh, ax, ay, aw, ah);
