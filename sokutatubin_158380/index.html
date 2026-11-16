@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -600,7 +599,7 @@ const SEASON_ORDER = ['haru', 'natsu', 'aki', 'fuyu'];
 // ==================================================================
 const DEFAULT_SHOP_ID = 'mofumofu_aratamabashi';
 const SHOP_ID = (new URLSearchParams(location.search).get('shop') || DEFAULT_SHOP_ID).replace(/[^a-zA-Z0-9_-]/g, '') || DEFAULT_SHOP_ID;
-const SHOP_DIR = 'shops/' + SHOP_ID + '/';
+let SHOP_DIR = 'shops/' + SHOP_ID + '/';   // 見つからないときは shops/ の直下も探します
 // shop.js が読めないときに使う、かわりの設定（トン・ガリアーノ）
 const FALLBACK_SHOP = {
     name: 'トン・ガリアーノ',
@@ -777,7 +776,11 @@ function applyShop() {
 (function loadShop() {
     const sc = document.createElement('script'); sc.src = SHOP_DIR + 'shop.js';
     sc.onload = () => { if (window.SHOP_DATA && window.SHOP_DATA.stops) SHOP = window.SHOP_DATA; applyShop(); };
-    sc.onerror = applyShop;
+    sc.onerror = () => {   // shops/お店のID/ に無ければ、shops/ の直下の shop.js を読む
+        if (SHOP_DIR === 'shops/') return applyShop();
+        SHOP_DIR = 'shops/'; const s2 = document.createElement('script'); s2.src = SHOP_DIR + 'shop.js';
+        s2.onload = sc.onload; s2.onerror = applyShop; document.head.appendChild(s2);
+    };
     document.head.appendChild(sc);
 })();
 
