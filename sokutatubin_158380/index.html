@@ -205,6 +205,12 @@ button { font-family: inherit; color: inherit; border: 0; background: none; curs
 .story-btn { padding: 10px 18px; border-radius: 999px; font-size: 14px; font-weight: 700; letter-spacing: .12em; border: 1px solid rgba(255,255,255,.3); background: rgba(255,255,255,.08); }
 .story-btn:disabled { opacity: .3; }
 .story-btn.primary { background: linear-gradient(180deg, #ffe58f, var(--gold) 45%, var(--amber)); color: #2a1600; border-color: transparent; font-weight: 900; }
+.dash-btn { padding: 12px 20px; font-size: 16px; font-weight: 900; letter-spacing: .06em; color: #fff; border: 0; background: linear-gradient(180deg, #ff6a5c, #e5322d 55%, #b81f1b); box-shadow: 0 6px 16px rgba(229,50,45,.45), inset 0 1px 0 rgba(255,255,255,.4); animation: dashPulse 1.6s ease-in-out infinite; touch-action: manipulation; }
+.dash-btn:active, .dash-btn.boost { transform: scale(.94); animation: none; }
+.dash-btn[hidden], .go-btn[hidden] { display: none; }
+@keyframes dashPulse { 50% { box-shadow: 0 6px 22px rgba(229,50,45,.8), 0 0 0 6px rgba(229,50,45,.18), inset 0 1px 0 rgba(255,255,255,.4); } }
+.go-btn { padding: 12px 22px; font-size: 16px; animation: goIn .5s cubic-bezier(.3,1.6,.5,1) both; }
+@keyframes goIn { from { opacity: 0; transform: scale(.7); } }
 .controls .hint { margin-left: auto; font-size: 11px; letter-spacing: .1em; color: rgba(255,255,255,.6); }
 .honk { position: absolute; z-index: 4; max-width: 72vw; padding: 7px 13px; border-radius: 16px; background: #fff; color: var(--ink); font-weight: 900; font-size: 14px; line-height: 1.4; pointer-events: none; opacity: 0; transform: translate(-50%, 6px) scale(.8); transition: opacity .25s, transform .3s cubic-bezier(.3,1.6,.5,1); box-shadow: 0 6px 14px rgba(0,0,0,.35); white-space: nowrap; border: 2px solid var(--gold); }
 .honk::after { content: ''; position: absolute; left: 22%; bottom: -8px; border: 8px solid transparent; border-top-color: #fff; border-bottom: 0; }
@@ -364,7 +370,7 @@ button { font-family: inherit; color: inherit; border: 0; background: none; curs
                 <span class="big">2<small>〜</small>3</span>
                 <span class="lab">工場を出てから<b>日以内</b></span>
             </div>
-            <p class="hero-lead jp-phrase h-in" style="--d:1.1s">できたての生ビールを、<wbr>寄り道せずにお店まで。<br>その旅を、いっしょに走ろう。</p>
+            <p class="hero-lead jp-phrase h-in" style="--d:1.1s" id="heroLead">できたての生ビールを、<wbr>寄り道せずにお店まで。<br>その旅を、いっしょに走ろう。</p>
         </div>
 
         <div class="op-start">
@@ -430,8 +436,9 @@ button { font-family: inherit; color: inherit; border: 0; background: none; curs
             <div id="capBody" aria-live="polite"></div>
             <div class="controls">
                 <button class="story-btn" id="btnPrev" hidden>‹ 戻る</button>
-                <button class="story-btn primary" id="btnNext" hidden>お店に入る ›</button>
-                <span class="hint" id="navHint">◀ 戻る ／ 進む ▶　トラックをタップで加速！</span>
+                <button class="story-btn dash-btn" id="btnDash">🚚💨 押すと加速！</button>
+                <button class="story-btn primary go-btn" id="btnNext" hidden>お店に入る ›</button>
+                <span class="hint" id="navHint">◀ 戻る ／ 進む ▶</span>
             </div>
         </div>
         <div class="intro" id="intro">
@@ -720,6 +727,15 @@ function sampleBottom(im) {   // 画像のいちばん下の色（画像の下�
         const n = d.length / 4; return `rgb(${r / n | 0},${g / n | 0},${b / n | 0})`;
     } catch (e) { return '#3b3d3f'; }
 }
+function drawWhole(c, im, x, y, w, h, align = 0.5) {   // 画像を切らずに全体を表示（すき間は、同じ写真をぼかして暗くしたもので埋める）
+    const iw = im.naturalWidth || im.width, ih = im.naturalHeight || im.height, kc = Math.max(w / iw, h / ih), k = Math.min(w / iw, h / ih);
+    c.save(); c.beginPath(); c.rect(x, y, w, h); c.clip();
+    c.filter = 'blur(14px)'; c.drawImage(im, x + (w - iw * kc) / 2, y + (h - ih * kc) / 2, iw * kc, ih * kc); c.filter = 'none';
+    c.fillStyle = 'rgba(10,8,14,.45)'; c.fillRect(x, y, w, h);
+    const dw = iw * k, dh = ih * k, dx = x + (w - dw) * align, dy = y + (h - dh) / 2;
+    c.shadowColor = 'rgba(0,0,0,.5)'; c.shadowBlur = Math.min(w, h) * 0.04;
+    c.drawImage(im, dx, dy, dw, dh); c.restore();
+}
 const bySeason = (v, k) => v && typeof v === 'object' && !Array.isArray(v) ? v[k] : v;   // 季節ごとに書いてあれば、その季節の分
 const photoUrl = (p) => /^(https?:|\/|\.\.\/)/.test(p) ? p : SHOP_DIR + p;            // 写真はお店のフォルダから
 function shopStop(k, d) {   // shop.js の1か所ぶんを、走るための形に
@@ -727,7 +743,7 @@ function shopStop(k, d) {   // shop.js の1か所ぶんを、走るための形�
     return { ...SEASONS[k].stops[k === 'fuyu' ? 1 : 0], s: k, bg, im: imgs[k], road: (BG[bg] || {}).road || 0.88, focus: (BG[bg] || {}).focus,
         place: d.name || sp.name || '',   // 景色だけ（bg だけ）の所は、紹介文なしで「配達中」の文に
         title: bySeason(d.title, k) || (sp.title && sp.title[k]) || d.name || '速達生ビール、配達中！',
-        text: bySeason(d.text, k) || (sp.text && sp.text[k]) || (d.name || d.spot ? '' : 'できたての生ビールを積んで、お店へ向かっています。トラックをタップすると加速！'),
+        text: bySeason(d.text, k) || (sp.text && sp.text[k]) || (d.name || d.spot ? '' : SHOP.runText || 'できたての生ビールを積んで、お店へ向かっています。'),
         memo: bySeason(d.memo, k) || (sp.memo && sp.memo[k]) || null,
         whole: !!d.menu,
         memoLabel: d.menu ? 'ここがポイント' : '歴史メモ',   // メニュー紹介（menu: 'ドリンク' など）は、写真を切らずにそのまま
@@ -771,6 +787,7 @@ function buildStops() { return [...(SHOP.stops || []).map(d => shopStop(mode, d)
 function applyShop() {
     (SHOP.stops || []).forEach(d => loadBg(d.bg || d.spot)); loadBg((SHOP.goal || {}).bg || 'tg');
     document.title = '速達生便。｜' + SHOP.name;
+    $('heroLead').innerHTML = `<b style="color:var(--gold)">${SHOP.name}</b>まで、<wbr>寄り道せずに向かいます！！<br>その旅を、いっしょに走ろう。`;
     if ((SHOP.goal || {}).photo) $('btnKao').textContent = '📸 記念写真をとる';   // お店の写真があるときは、チェキ風の記念写真
 }
 (function loadShop() {
@@ -1044,8 +1061,7 @@ class StripScene {   // トラックは左から右へ走り、景色は左へ�
             if (Math.abs(dist) < 4 || Math.sign(this.goto - this.pan) !== Math.sign(dist)) { this.pan = this.goto; this.goto = null; this.speed = 0; if (this.after) { Object.assign(this, this.after); this.holdT = 0; this.after = null; } }
         } else if (this.arrived) this.speed = 0;
         else if (this.isHold) {   // 名所で立ち止まる
-            this.speed = 0; this.holdT += dt;
-            if (this.holdT >= HOLD_S) this.release();
+            this.speed = 0; this.holdT += dt;   // 「発進！」ボタンを押すまで止まったまま
         } else {   // 区間ごとに同じ時間で走る（押すと速く）
             const p = this.stopPans(), from = this.leg === 0 ? this.startPan() : p[this.leg - 1], to = p[this.leg];
             this.legT += dt * (this.boost > 0 ? BOOST : 1);
@@ -1146,11 +1162,11 @@ const Drive = (() => {
     let running = false, raf = 0, last = 0, stops = [], idx = -1, introUntil = 0, honkTimer = 0;
     function size() { const r = $('s-drive').getBoundingClientRect(); scene.resize(r.width, r.height); }
     let capKey = '';
-    const RUN = { place: '', title: '速達生ビール、配達中！', text: 'できたての生ビールを積んで、お店へ向かっています。トラックをタップすると加速！' };
+    const RUN = { place: '', title: '速達生ビール、配達中！', text: 'できたての生ビールを積んで、お店へ向かっています。' };   // 走っている間の文（shop.js の runText で変えられます）
     function caption(i) {
         idx = i;
         // 文は「走っている」「止まっている（名所）」「到着」で切りかえる（背景の景色とは関係なし）
-        const s = scene.isHold ? stops[scene.holds[scene.leg].i] : scene.arrived ? stops[stops.length - 1] : (scene.leg === 0 && !scene.isHold ? stops[0] : RUN);
+        const s = scene.isHold ? stops[scene.holds[scene.leg].i] : scene.arrived ? stops[stops.length - 1] : (scene.leg === 0 && !scene.isHold ? stops[0] : { ...RUN, text: SHOP.runText || RUN.text });
         const key = s.place + '|' + s.title;
         if (key === capKey) return;   // 景色が変わっても、同じ文ならそのまま
         capKey = key;
@@ -1180,8 +1196,10 @@ const Drive = (() => {
     let bubbleT = 3, bubbleOn = 0, lineN = 0;
     function bubble(dt) {
         const h = $('honk');
-        if (bubbleOn > 0) { bubbleOn -= dt; if (bubbleOn <= 0) h.classList.remove('show'); }
-        else if (!scene.arrived && (bubbleT -= dt) <= 0) { h.textContent = LINES[lineN++ % LINES.length]; h.classList.add('show'); bubbleOn = 2.8; bubbleT = rand(7, 10); }
+        const quiet = scene.arrived || scene.isHold || $('pop').classList.contains('show');   // メニューが出ている間は出さない
+        if (quiet) { if (bubbleOn > 0) { bubbleOn = 0; h.classList.remove('show'); } bubbleT = Math.max(bubbleT, 1); }
+        else if (bubbleOn > 0) { bubbleOn -= dt; if (bubbleOn <= 0) h.classList.remove('show'); }
+        if (!quiet && (bubbleT -= dt) <= 0) { h.textContent = LINES[lineN++ % LINES.length]; h.classList.add('show'); bubbleOn = 2.2; bubbleT = 3; }   // 3秒に1回
         const tr = scene.truckRect(); h.style.left = (tr.x + tr.w * 0.62) + 'px'; h.style.top = (tr.y - 50) + 'px';
     }
     function frame(t) {
@@ -1195,13 +1213,23 @@ const Drive = (() => {
         if (hk !== popKey) { popKey = hk; if (hk === null) { clearTimeout(popTimer); $('pop').classList.remove('show'); } else showPops(hk === 'goal' ? stops.length - 1 : scene.holds[hk].i); }
         const si = scene.stopIndex(); scene.stopPans().forEach((_, k) => { const el = $('seg' + k); if (el) el.style.width = (k < si ? 100 : k > si ? 0 : scene.stopProgress(k) * 100) + '%'; });
         const arrived = scene.arrived;
-        $('btnNext').hidden = !arrived; $('navHint').hidden = arrived;
+        const holdReady = scene.holding() && scene.holdT > 1.4;   // メニューが出てから「発進！」
+        const goTxt = arrived ? 'お店に入る ›' : '🚚 発進！ ›';
+        if ($('btnNext').textContent !== goTxt) $('btnNext').textContent = goTxt;
+        $('btnNext').hidden = !(arrived || holdReady);
+        $('btnDash').hidden = arrived || scene.isHold; $('navHint').hidden = arrived || scene.isHold;
         scene.draw();
         raf = requestAnimationFrame(frame);
     }
     function next() { if (scene.arrived) show('pour'); else if (scene.holding()) scene.release(); else scene.fastForward(); }
     function prev() { scene.backStop(); }
     $('btnNext').addEventListener('click', next);
+    $('btnDash').addEventListener('click', () => {   // 加速ボタン：トラックがジャンプして速くなる
+        if (!running || scene.arrived || scene.isHold) return;
+        scene.dash(); honks++; if (navigator.vibrate) try { navigator.vibrate(30); } catch (_) {}
+        const b = $('btnDash'); b.classList.add('boost'); b.textContent = '💨 ビューン！'; clearTimeout(b._t);
+        b._t = setTimeout(() => { b.classList.remove('boost'); b.textContent = '🚚💨 押すと加速！'; }, 700);
+    });
     // ショート動画のように：右をタップで進む／左で戻る。トラックをタップするとジャンプして加速
     $('s-drive').addEventListener('click', (e) => {
         if (!running || e.target.closest('button')) return;
@@ -1702,10 +1730,8 @@ const Kao = (() => {
     function cheki(c, X, Y, W, H, sp) {
         const u = H / 736;
         c.save(); c.beginPath(); c.rect(X, Y, W, H); c.clip();
-        if (sp.complete && sp.naturalWidth) {   // 背景：お店の写真（はみ出しは切る。看板が見えるよう少し上より）
-            const iw = sp.naturalWidth, ih = sp.naturalHeight, k = Math.max(W / iw, H / ih), dw = iw * k, dh = ih * k;
-            c.drawImage(sp, X + (W - dw) / 2, Y + (H - dh) * 0.3, dw, dh);
-        } else { c.fillStyle = '#3a2a22'; c.fillRect(X, Y, W, H); }
+        if (sp.complete && sp.naturalWidth) drawWhole(c, sp, X, Y, W, H, 0.08);   // 背景：お店の外観を全部見せる（右はチェキ用に空ける）
+        else { c.fillStyle = '#3a2a22'; c.fillRect(X, Y, W, H); }
         const vg = c.createLinearGradient(0, Y + H * 0.55, 0, Y + H); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.35)');
         c.fillStyle = vg; c.fillRect(X, Y, W, H);
         // チェキ（スクエア判：72×86。写真は 62×62）
@@ -1848,7 +1874,7 @@ const MyCard = (() => {
         c.save(); rr(c, ax, ay, aw, ah, 14 * u); c.clip();
         const gim = goal && goal.im && goal.im.ok ? goal.im : null;
         const photo = cardPhoto && cardPhoto.complete && cardPhoto.naturalWidth ? cardPhoto : null;   // お店の外観写真があれば、そちらを使う
-        if (photo) cover(c, photo, ax, ay, aw, ah, .5, .5);
+        if (photo) drawWhole(c, photo, ax, ay, aw, ah, .5);   // お店の外観が全部見えるように（引きで）
         else if (gim) {   // お店の画像から、お店の建物まわりを大きく切りだす（色はかけない）
             const nw = gim.naturalWidth, nh = gim.naturalHeight, sh = nh * 0.8, sw = sh * aw / ah;
             c.drawImage(gim, clamp(nw * (goal.focus || .5) - sw / 2, 0, nw - sw), 0, sw, sh, ax, ay, aw, ah);
