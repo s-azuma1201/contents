@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -398,18 +397,18 @@ button{font:inherit; color:inherit}
    設定
    ================================================================= */
 // リーチ演出の動画（速達生 鮮度の旅：出発の動画）。空にすると内蔵のアニメーション演出が流れます。
-const REACH_MP4 = "assets/sokunamatabi.mp4";
+const REACH_MP4 = "setup/sokunamatabi.mp4";
 const REACH_VIDEO = { beer:REACH_MP4, sake:REACH_MP4, wine:REACH_MP4 };
 
 // 台のモニターに流す「速達生便」の素材
-const TRUCK_IMG = "assets/truck.webp";
+const TRUCK_IMG = "setup/truck.webp";
 const ROUTE = [   // 流れていく景色（左から順に。最後まで行くと最初に戻る）。road は道路の高さ（画像の上からの割合）
-  {f:"assets/bg/tokyo_haru.webp",    road:.86},
-  {f:"assets/bg/fuji_natsu.webp",    road:.92},
-  {f:"assets/bg/nagoya_aki.webp",    road:.85},
-  {f:"assets/bg/kyoto_haru.webp",    road:.90},
-  {f:"assets/bg/yokohama_natsu.webp",road:.84},
-  {f:"assets/bg/okazaki_aki.webp",   road:.88},
+  {f:"setup/tokyo_haru.webp",    road:.86},
+  {f:"setup/fuji_natsu.webp",    road:.92},
+  {f:"setup/nagoya_aki.webp",    road:.85},
+  {f:"setup/kyoto_haru.webp",    road:.90},
+  {f:"setup/yokohama_natsu.webp",road:.84},
+  {f:"setup/okazaki_aki.webp",   road:.88},
 ];
 
 const RATE = { rare:1/15 };   // 大当たり（店長の隠し酒）の確率。ハズレはなし：毎回必ず3つ揃います
@@ -612,25 +611,25 @@ function buildSprite(){
    どの台も同じリール（6種×2コマ＋ロゴ1コマ）。台ごとに「揃う絵柄」が変わります。
    ================================================================= */
 const ITEMS = {   // 揃うとお酒が決まる絵柄
-  beer:   {img:"img/beer.webp", n:"生ビール", cat:"ビール",
+  beer:   {img:"image/beer.webp", n:"生ビール", cat:"ビール",
            d:"泡まできめ細かい、キンキンの生ビール。まずはこれで乾杯！", f:["唐揚げ","枝豆","焼き餃子"], s:["キンキンのジョッキ","薄はりグラス"]},
-  truck:  {img:"img/truck.webp", n:"速達生ビール", cat:"ビール",
+  truck:  {img:"image/truck.webp", n:"速達生ビール", cat:"ビール",
            d:"速達トラックで届いた、鮮度自慢の生ビール。", f:["唐揚げ","フライドポテト","焼き鳥"], s:["キンキンのジョッキ"]},
-  taru:   {img:"img/sake_taru.webp", n:"日本酒", cat:"日本酒",
+  taru:   {img:"image/sake_taru.webp", n:"日本酒", cat:"日本酒",
            d:"お祝いの樽酒のように、華やかでめでたい一杯。お米の旨みをゆっくりどうぞ。", f:["刺身盛り","だし巻き玉子","塩焼き"], s:["冷や","常温"]},
-  tokkuri:{img:"img/sake_logo.webp", n:"燗酒", cat:"日本酒",
+  tokkuri:{img:"image/sake_logo.webp", n:"燗酒", cat:"日本酒",
            d:"とっくりで温めた日本酒。ふわっと香りが立ち、体の芯からあたたまります。", f:["おでん","焼き魚","煮物"], s:["ぬる燗","熱燗"]},
-  grapes: {img:"img/grapes.webp", n:"グラスワイン", cat:"ワイン",
+  grapes: {img:"image/grapes.webp", n:"グラスワイン", cat:"ワイン",
            d:"ブドウの果実味がそのまま広がる、飲みやすい一杯。", f:["生ハム","チーズ盛り","カプレーゼ"], s:["グラスで"]},
-  red:    {img:"img/wine_glass.webp", n:"赤ワイン", cat:"ワイン",
+  red:    {img:"image/wine_glass.webp", n:"赤ワイン", cat:"ワイン",
            d:"しなやかな渋みと深い色。お肉料理と一緒にゆっくり味わう赤。", f:["ステーキ","チーズ盛り","ミートソースパスタ"], s:["大ぶりのグラスで","常温寄り"]},
-  white:  {img:"img/wine_white.webp", n:"白ワイン", cat:"ワイン",
+  white:  {img:"image/wine_white.webp", n:"白ワイン", cat:"ワイン",
            d:"キリッと冷えた白。爽やかな酸味で料理がすすみます。", f:["カルパッチョ","エビのアヒージョ","グリーンサラダ"], s:["よく冷やして","グラスで"]},
 };
 // 大当たりの絵柄（スロットの7）
-const RARE = {id:"seven", img:"img/seven.svg", n:"店長の隠し酒", d:"メニューに載っていない、店長とっておきの一杯。中身は店員さんに聞いてからのお楽しみ。"};
+const RARE = {id:"seven", img:"image/seven.svg", n:"店長の隠し酒", d:"メニューに載っていない、店長とっておきの一杯。中身は店員さんに聞いてからのお楽しみ。"};
 // リールに流れるだけの絵柄（ロゴ）
-const DECOR = [ {id:"maruto", img:"img/logo_maruto.webp"}, {id:"happy", img:"img/logo_happyring.webp"} ];
+const DECOR = [ {id:"maruto", img:"image/logo_maruto.webp"}, {id:"happy", img:"image/logo_happyring.webp"} ];
 const PHOTO = Object.fromEntries([...Object.entries(ITEMS).map(([k,v])=>[k,v.img]), [RARE.id, RARE.img], ...DECOR.map(d=>[d.id,d.img])]);
 
 const MACHINES = {   // 台ごとに「揃う絵柄」（好みの味ごと）
