@@ -653,7 +653,8 @@ html.lockplay #s-play{height:calc(100svh - var(--fTop) - var(--fB)); min-height:
 #s-play .wrap{height:100%; display:flex; flex-direction:column; padding-bottom:0 !important}
 #s-play .topbar{flex:none; margin-bottom:6px}
 #s-play .scene{flex:1; min-height:0; display:flex}
-#s-play .cabinet{flex:1; min-height:0; display:flex; flex-direction:column; --ov:56px !important}
+#s-play .cabinet{flex:1; min-height:0; display:flex; flex-direction:column; --ov:0px !important}
+#s-play .bezel{margin-top:0 !important}
 #s-play .monitor{flex:1 1 auto; min-height:110px; height:auto !important}
 #s-play .bezel,#s-play .trim,#s-play .deck{flex:none}
 #s-play .deck{padding:12px 16px 14px !important}
@@ -892,6 +893,16 @@ html.lockplay #s-q,html.lockplay #s-decide{height:calc(100svh - var(--fTop) - va
 .tb-ring{display:none}
 .tb-title{color:#f3e2a8 !important; text-shadow:0 0 10px rgba(255,214,120,.5) !important; font-size:16px !important}
 .tb-sub{color:#9fb4d8 !important}
+
+/* カードの表と裏：クラスで切りかえる（iPhoneでも確実に） */
+.tcard.showback .tc-inner,.tcard.showback .tc-foil,.tcard.showback .tc-glare,.tcard.showback .tc-gloss{visibility:hidden}
+.tcard:not(.showback) .tc-back{visibility:hidden}
+.tc-back,.tc-inner{-webkit-backface-visibility:visible !important; backface-visibility:visible !important}
+#cardStage .tcard.flip1{transform:translateY(calc(var(--ty,18px) * .4)) scale(calc(1 + (var(--s,1) - 1) * .4)) rotateY(270deg) !important;
+  transition:transform .38s cubic-bezier(.55,0,.9,.45) !important}
+#cardStage.out .tcard{transition:transform .7s cubic-bezier(.15,.9,.3,1.15) !important}
+/* リールの絵柄はセルの大きさに合わせる */
+.cell img{height:calc(var(--cell) * .86) !important}
 </style>
 </head>
 <body data-m="beer">
@@ -1403,7 +1414,7 @@ function decide(){
   show("s-decide"); setTimeout(fitScreen, 50);
   sfx.fanfare(false);
 }
-$("#d-go").onclick = ()=>{ setupMachine(); show("s-play"); const c=$("#cab"); c.classList.remove("enter"); void c.offsetWidth; c.classList.add("enter"); sfx.ctx(); };
+$("#d-go").onclick = ()=>{ setupMachine(); show("s-play"); fitPlay(); const c=$("#cab"); c.classList.remove("enter"); void c.offsetWidth; c.classList.add("enter"); sfx.ctx(); };
 $("#d-redo").onclick = $("#p-redo").onclick = ()=>{ if(busy()) return; qi=0; renderQ(); show("s-q"); };
 
 /* =================================================================
@@ -1422,6 +1433,20 @@ function shuffleStrip(list){
   }
   return list;
 }
+
+// 映像（モニター）を優先して大きく。足りない分はリールを小さくする
+function fitPlay(){
+  const sc = $("#s-play"); if(!sc.classList.contains("active")) return;
+  const root = document.documentElement;
+  root.style.setProperty("--cell", "58px");
+  const avail = sc.clientHeight;
+  const others = $("#s-play .topbar").offsetHeight + 6 + $("#s-play .trim").offsetHeight + $("#s-play .deck").offsetHeight + 24;
+  const monWant = Math.max(avail*.42, 200);
+  const cell = Math.max(34, Math.min(58, Math.floor((avail - others - monWant)/3)));
+  root.style.setProperty("--cell", cell+"px");
+  if(reels.length) render();
+}
+addEventListener("resize", ()=>setTimeout(fitPlay, 50));
 
 function setupMachine(){
   tries = 0;
@@ -1596,6 +1621,7 @@ const Delivery = (()=>{
   return { draw, say(text){ bubble = {text, t:0}; }, jump(){ jump=1; boost=Math.max(boost,.7); }, dash(sec){ boost=Math.max(boost,sec); jump=1; brakeT=0; }, brake(){ brakeT=1.4; boost=0; } };
 })();
 
+function ovOf(fallback){ const v = parseFloat(getComputedStyle($("#cab")).getPropertyValue("--ov")); return isNaN(v) ? fallback : v; }
 function drawMonitor(now){
   if(!document.getElementById("s-play").classList.contains("active")) return;
   const dpr=Math.min(2, devicePixelRatio||1), w=monCv.clientWidth, h=monCv.clientHeight;
@@ -1604,7 +1630,7 @@ function drawMonitor(now){
   monCtx.setTransform(dpr,0,0,dpr,0,0);
   monCtx.save();
   if(monitorOverride) monitorOverride(monCtx,w,h);
-  else Delivery.draw(monCtx, w, h, now, parseFloat(getComputedStyle($("#cab")).getPropertyValue("--ov"))||h*.3);
+  else Delivery.draw(monCtx, w, h, now, ovOf(h*.3));
   monCtx.restore();
 }
 
@@ -1878,6 +1904,8 @@ function showCard(id, rare){
       <div class="tb-sub">OFFICIAL CARD</div>
     </div>`;
   $("#cardBtns").classList.remove("show");
+  card.classList.add("showback");          // 出てくる間は裏面だけを見せる
+  card.classList.remove("flip1");
   st.classList.remove("out"); st.classList.add("show");
   void card.offsetWidth; card.classList.add("feed");
   sfx.feed(); $("#cabFrame").classList.add("feeding");
@@ -1893,10 +1921,15 @@ function showCard(id, rare){
     card.dataset.t0 = performance.now();
     card.style.transform = "translateY(0px) scale(1) rotateX(0deg) rotateY(180deg)";   // 出きった位置から回し始める
     card.classList.remove("feed"); void card.offsetWidth;
-    st.classList.add("out"); sfx.flip();
-    // 表が見えた瞬間にピカッ
-    setTimeout(()=>{ const f=$("#cardFlash"); f.classList.remove("on"); void f.offsetWidth; f.classList.add("on");
-      sfx.fanfare(rare); buzz([40,60,90]); if(rare) confetti(60); }, 420);
+    // ① 裏面のまま、横向き（真横）になるまで回す
+    card.classList.add("flip1"); sfx.flip();
+    setTimeout(()=>{
+      // ② 真横になった瞬間に表へ入れかえて、残りを回しきる
+      card.classList.remove("showback"); void card.offsetWidth;
+      st.classList.add("out"); card.classList.remove("flip1");
+      const f=$("#cardFlash"); f.classList.remove("on"); void f.offsetWidth; f.classList.add("on");
+      sfx.fanfare(rare); buzz([40,60,90]); if(rare) confetti(60);
+    }, 380);
   }, 1900);
   setTimeout(()=>$("#cardBtns").classList.add("show"), 3200);
 }
@@ -2039,7 +2072,7 @@ function playReach(m, rare, tier="gold"){
     const parts = Array.from({length:90},()=>({x:Math.random(), y:Math.random(), r:1+Math.random()*4, s:.3+Math.random()*1.2, a:Math.random()*6.28, w:(Math.random()-.5)*2}));
     const t0 = performance.now();
     let shrinkAt = null, done = false, raf, video = null, videoStarted = false, curT = 0;
-    const ovPx = ()=> parseFloat(getComputedStyle($("#cab")).getPropertyValue("--ov")) || 0;
+    const ovPx = ()=> ovOf(0);
 
     const list = reachList(m).filter(src=>!getVideo(src).error);
     if(list.length){ video = getVideo(pick(list)); }
