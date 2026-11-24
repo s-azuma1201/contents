@@ -647,6 +647,194 @@ body{padding:var(--fTop) var(--fS) var(--fB)}
 #cardStage .cardClip::before{content:""; position:absolute; left:50%; top:46%; width:120%; aspect-ratio:1; transform:translate(-50%,-50%); border-radius:50%;
   background:radial-gradient(circle, rgba(255,211,77,.35), transparent 60%); opacity:0; transition:opacity .6s .8s; pointer-events:none}
 #cardStage.out .cardClip::before{opacity:1}
+/* ===== 遊ぶ画面：スマホ1画面に収めて固定 ===== */
+html.lockplay,html.lockplay body{overflow:hidden; overscroll-behavior:none; height:100%}
+html.lockplay #s-play{height:calc(100svh - var(--fTop) - var(--fB)); min-height:0; overflow:hidden; touch-action:none}
+#s-play .wrap{height:100%; display:flex; flex-direction:column; padding-bottom:0 !important}
+#s-play .topbar{flex:none; margin-bottom:6px}
+#s-play .scene{flex:1; min-height:0; display:flex}
+#s-play .cabinet{flex:1; min-height:0; display:flex; flex-direction:column; --ov:56px !important}
+#s-play .monitor{flex:1 1 auto; min-height:110px; height:auto !important}
+#s-play .bezel,#s-play .trim,#s-play .deck{flex:none}
+#s-play .deck{padding:12px 16px 14px !important}
+#s-play .stopwrap{width:74px; height:74px}
+#s-play .btn3d.stop{width:58px; height:58px !important}
+#s-play .startrow{margin-top:14px !important}
+#s-play .start{height:56px !important}
+
+/* ===== リーチ：金色に光る ===== */
+.cab-frame.gold .cf-side::after{background:repeating-linear-gradient(180deg,#fff3c4 0 4px,#ffd34d 4px 8px,rgba(0,0,0,.55) 8px 14px); box-shadow:0 0 14px #ffd34d, 0 0 4px #fff; animation-duration:.3s; opacity:1}
+.cab-frame.gold .cf-top{box-shadow:inset 0 -2px 0 #ffd34d, inset 0 -4px 0 #0a0a0a, 0 6px 26px rgba(255,211,77,.65)}
+.cab-frame.gold .cf-sign{color:#fff; text-shadow:0 0 8px #ffd34d, 0 0 18px #ffb300, 0 0 34px #ff9900}
+.cab-frame.gold .cf-lamps{animation-duration:.15s}
+.cab-frame.gold .cf-bottom{box-shadow:0 -2px 0 #ffd34d, 0 -8px 24px rgba(255,211,77,.6)}
+.cab-frame::after{content:""; position:absolute; top:var(--fTop); left:var(--fS); right:var(--fS); bottom:var(--fB); pointer-events:none; opacity:0; transition:opacity .3s;
+  box-shadow:inset 0 0 0 2px #ffd34d, inset 0 0 36px rgba(255,211,77,.55)}
+.cab-frame.gold::after{opacity:1; animation:goldpulse .5s ease-in-out infinite alternate}
+@keyframes goldpulse{from{box-shadow:inset 0 0 0 2px #ffd34d, inset 0 0 22px rgba(255,211,77,.35)} to{box-shadow:inset 0 0 0 3px #fff3c4, inset 0 0 50px rgba(255,211,77,.75)}}
+/* 揃いそうなリールの枠は金色（どの色のリーチでも） */
+.cabinet .reel.reach{animation:goldreel .45s ease-in-out infinite alternate !important; z-index:2}
+@keyframes goldreel{from{box-shadow:0 0 0 3px #ffd34d, 0 0 18px #ffd34d, inset 0 0 12px rgba(255,211,77,.5)} to{box-shadow:0 0 0 4px #fff3c4, 0 0 34px #ffd34d, 0 0 60px rgba(255,180,0,.6), inset 0 0 22px rgba(255,211,77,.8)}}
+.cabinet.fever .bezel{box-shadow:0 0 0 2px #ffd34d, 0 0 30px rgba(255,211,77,.6), 0 8px 14px rgba(0,0,0,.6) !important}
+/* 最後のリール：止まる直前のドキドキ */
+.reel.tension{animation:tension .32s ease-in-out infinite !important}
+@keyframes tension{0%,100%{box-shadow:0 0 0 4px #fff3c4, 0 0 40px #ffd34d; filter:brightness(1)} 50%{box-shadow:0 0 0 5px #fff, 0 0 70px #ffb300; filter:brightness(1.15)}}
+/* 最後のSTOPが黄金に開く */
+.stopwrap{position:relative}
+.stopwrap::before{content:""; position:absolute; inset:-16px; border-radius:50%; opacity:0; pointer-events:none;
+  background:repeating-conic-gradient(rgba(255,230,140,.85) 0 8deg, transparent 8deg 22deg);
+  -webkit-mask:radial-gradient(circle, transparent 46%, #000 48%, #000 62%, transparent 72%); mask:radial-gradient(circle, transparent 46%, #000 48%, #000 62%, transparent 72%)}
+.stopwrap.goldopen{background:conic-gradient(from 200deg, #fff8d6, #c8890e, #ffe27a, #8a5a00, #fff3c4, #b8860b, #fff8d6) !important;
+  box-shadow:0 0 0 2px #fff3c4, 0 0 30px #ffd34d, 0 6px 12px rgba(0,0,0,.7) !important; animation:ringopen .7s cubic-bezier(.2,1.5,.4,1)}
+.stopwrap.goldopen::before{opacity:1; animation:rays 2.4s linear infinite}
+@keyframes rays{to{transform:rotate(360deg)}}
+@keyframes ringopen{0%{transform:scale(.6)} 60%{transform:scale(1.22)} 100%{transform:scale(1)}}
+.btn3d.stop.gold{animation:goldflip .7s ease-out;
+  background:radial-gradient(circle at 50% 26%, #fffbe6 0%, #ffe27a 28%, #e0a816 62%, #7a4e00 100%) !important; color:#3a2200 !important; text-shadow:0 1px 0 rgba(255,255,255,.6) !important;
+  box-shadow:0 6px 0 #5a3a00, 0 8px 22px rgba(255,200,60,.8), inset 0 3px 4px rgba(255,255,255,.85), inset 0 -8px 12px rgba(120,70,0,.5) !important}
+@keyframes goldflip{0%{transform:rotateY(0) scale(.7); filter:brightness(2)} 50%{transform:rotateY(180deg) scale(1.15)} 100%{transform:rotateY(360deg) scale(1); filter:brightness(1)}}
+
+/* ===== 2問目：味の選択 ===== */
+.q2 .qtext{font-size:21px}
+.tastes{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:16px 0 10px}
+.tbtn{position:relative; border:none; cursor:pointer; padding:16px 8px 14px; border-radius:16px; color:#fff; overflow:hidden;
+  display:flex; flex-direction:column; align-items:center; gap:4px;
+  box-shadow:0 0 0 1px #000, 0 0 0 3px #6a6a70, 0 14px 26px rgba(0,0,0,.7), 0 0 26px var(--g);
+  animation:rise .6s cubic-bezier(.2,.9,.3,1.1) backwards; animation-delay:calc(var(--i)*.12s); transition:transform .25s, opacity .3s, filter .3s}
+.tbtn.t0{--g:rgba(90,200,255,.45); --n:#7fdcff; background:radial-gradient(ellipse at 50% 0%, rgba(120,220,255,.35), transparent 60%), linear-gradient(180deg,#0f3550,#071620)}
+.tbtn.t1{--g:rgba(255,170,70,.45); --n:#ffb347; background:radial-gradient(ellipse at 50% 0%, rgba(255,190,110,.35), transparent 60%), linear-gradient(180deg,#4a2508,#1a0c02)}
+.tb-bulbs{position:absolute; inset:5px; border-radius:12px; pointer-events:none;
+  background:
+    radial-gradient(circle, var(--n) 0 2px, transparent 2.6px) 0 0/12px 12px repeat-x,
+    radial-gradient(circle, var(--n) 0 2px, transparent 2.6px) 0 100%/12px 12px repeat-x,
+    radial-gradient(circle, var(--n) 0 2px, transparent 2.6px) 0 0/12px 12px repeat-y,
+    radial-gradient(circle, var(--n) 0 2px, transparent 2.6px) 100% 0/12px 12px repeat-y;
+  filter:drop-shadow(0 0 3px var(--n)); animation:bulbs .5s steps(2) infinite}
+@keyframes bulbs{50%{opacity:.35}}
+.tb-en{font-family:Oswald,sans-serif; font-size:11px; letter-spacing:.35em; color:var(--n); margin-top:4px}
+.tb-icon{font-size:40px; line-height:1.1; animation:bob 1.6s ease-in-out infinite; animation-delay:calc(var(--i)*.3s); filter:drop-shadow(0 0 10px var(--n))}
+@keyframes bob{50%{transform:translateY(-6px) rotate(-6deg)}}
+.tb-name{font-size:24px; font-weight:900; letter-spacing:.08em; text-shadow:0 0 8px var(--n), 0 0 18px var(--n)}
+.tb-sub{font-size:11px; color:#d9cfc0}
+.tb-maybe{margin-top:6px; font-size:10px; font-weight:700; color:#ffd36e; letter-spacing:.1em}
+.tb-syms{display:flex; gap:6px; justify-content:center}
+.tb-syms b{width:46px; height:46px; border-radius:50%; background:#fff; display:grid; place-items:center; overflow:hidden; box-shadow:0 0 0 2px var(--n), 0 0 14px var(--n)}
+.tb-syms img{height:36px; width:auto; max-width:40px; object-fit:contain}
+.tb-push{margin-top:8px; font-family:Oswald,sans-serif; font-weight:700; letter-spacing:.3em; font-size:12px; padding:6px 16px; border-radius:999px; color:#2a1600;
+  background:linear-gradient(180deg,#fff4c4,#ffd34d 50%,#d99a10); box-shadow:0 3px 0 #7a5200; animation:pulse 1.2s ease-in-out infinite}
+.tbtn:active{transform:scale(.97)}
+.tbtn.dim{opacity:.25; filter:grayscale(.8); transform:scale(.94)}
+.tbtn.chosen{transform:translateY(-6px) scale(1.05); box-shadow:0 0 0 2px #ffd34d, 0 0 44px #ffd34d, 0 14px 26px rgba(0,0,0,.7)}
+.tbtn.chosen .tb-bulbs{animation-duration:.12s}
+
+/* ===== 台の発表 ===== */
+.decide{padding-top:4vh !important}
+.marquee-box{position:relative; margin:0 auto 14px; padding:18px 14px 16px; border-radius:16px; max-width:340px;
+  background:radial-gradient(ellipse at 50% 0%, rgba(255,215,120,.18), transparent 70%), linear-gradient(180deg,#1e1a14,#0c0a08);
+  box-shadow:0 0 0 2px #6a5a3a, 0 0 0 4px #0a0a0a, 0 0 0 5px #c9a043, 0 0 40px var(--glow)}
+.marquee-box::before{content:""; position:absolute; inset:6px; border-radius:11px; pointer-events:none;
+  background:
+    radial-gradient(circle, #ffd34d 0 2.2px, transparent 2.8px) 0 0/14px 12px repeat-x,
+    radial-gradient(circle, #ffd34d 0 2.2px, transparent 2.8px) 7px 100%/14px 12px repeat-x;
+  filter:drop-shadow(0 0 3px #ffb300); animation:bulbs .45s steps(2) infinite}
+.marquee-box .mname{font-size:40px; margin:4px 0 8px; color:#fff; text-shadow:0 0 8px var(--accent), 0 0 22px var(--accent), 0 0 44px var(--accent)}
+.marquee-box .tags{margin:0}
+.marquee-box .tag{background:#0b0b0b; border-color:#3a3a3a; color:#ffd36e; font-family:"Noto Sans JP",monospace; font-weight:700; text-shadow:0 0 6px rgba(255,190,60,.8)}
+.d-maybe{text-align:center; font-weight:900; font-size:15px; letter-spacing:.06em; margin:6px 0 10px}
+.d-maybe{background:linear-gradient(180deg,#fff6d0,#ffd34d 45%,#c8890e); -webkit-background-clip:text; background-clip:text; color:transparent; animation:pulse 1.4s ease-in-out infinite}
+.preview div{animation:flipin .7s cubic-bezier(.2,1.4,.4,1) backwards !important; animation-delay:calc(.3s + var(--i,0)*.15s) !important; box-shadow:0 0 0 3px #ffd34d, 0 0 26px rgba(255,211,77,.6), 0 10px 30px rgba(0,0,0,.5) !important}
+@keyframes flipin{from{transform:rotateY(180deg) scale(.5); opacity:0}}
+.cta{position:relative; overflow:hidden; display:flex !important; align-items:center; justify-content:center; gap:10px; font-size:19px !important;
+  background:linear-gradient(180deg,#fff4c4,#ffd34d 45%,#d99a10) !important; color:#2a1600 !important; box-shadow:0 6px 0 #7a5200, 0 10px 30px rgba(255,200,60,.5) !important}
+.cta::after{content:""; position:absolute; inset:0; background:linear-gradient(115deg, transparent 35%, rgba(255,255,255,.6) 50%, transparent 65%); transform:translateX(-120%); animation:ctashine 2.2s ease-in-out infinite}
+@keyframes ctashine{0%,40%{transform:translateX(-120%)} 100%{transform:translateX(120%)}}
+.cta i{font-style:normal; animation:nudge .8s ease-in-out infinite}
+@keyframes nudge{50%{transform:translateX(5px)}}
+.tb-sub{letter-spacing:0 !important; white-space:nowrap; font-size:10.5px}
+.tbtn *{letter-spacing:normal}
+.tb-en,.tb-push{letter-spacing:.3em !important}
+/* ================= v9：よりリアルな光とボタン ================= */
+/* --- STOP：クロームの台座＋ガラスのドーム --- */
+#s-play .stopwrap{width:76px; height:76px; position:relative;
+  background:
+    radial-gradient(circle at 50% 50%, transparent 58%, rgba(0,0,0,.55) 60%, transparent 66%),
+    conic-gradient(from 210deg, #f7f7f7, #8c8c92 12%, #e9e9ee 24%, #5a5a60 38%, #d8d8dd 52%, #6e6e74 66%, #fafafa 80%, #9a9aa0 92%, #f7f7f7) !important;
+  box-shadow:0 1px 0 rgba(255,255,255,.35) inset, 0 -2px 3px rgba(0,0,0,.45) inset, 0 8px 14px rgba(0,0,0,.75), 0 2px 0 #0a0a0a !important}
+#s-play .btn3d.stop{width:58px; height:58px !important; position:relative; overflow:hidden; font-family:Oswald,sans-serif; font-size:12px !important; letter-spacing:.12em;
+  background:radial-gradient(circle at 50% 35%, #6a6a70 0%, #303036 50%, #121215 100%) !important;
+  box-shadow:0 5px 0 #050506, 0 7px 10px rgba(0,0,0,.7), inset 0 -6px 10px rgba(0,0,0,.6), inset 0 0 0 1px rgba(255,255,255,.08) !important; color:#6c6c72 !important}
+/* ガラスの映りこみ（上のハイライト）と下の照り返し */
+#s-play .btn3d.stop::before{content:""; position:absolute; left:16%; right:16%; top:7%; height:40%; border-radius:50%;
+  background:linear-gradient(180deg, rgba(255,255,255,.75), rgba(255,255,255,.08)); pointer-events:none}
+#s-play .btn3d.stop::after{content:""; position:absolute; left:22%; right:22%; bottom:8%; height:16%; border-radius:50%;
+  background:radial-gradient(ellipse, rgba(255,255,255,.28), transparent 70%); pointer-events:none}
+#s-play .btn3d.stop.live{color:#fff !important; text-shadow:0 1px 2px rgba(80,0,0,.8) !important;
+  background:radial-gradient(circle at 50% 38%, #ff8a80 0%, #ff2d20 32%, #c40f06 62%, #5e0300 100%) !important;
+  box-shadow:0 5px 0 #3a0000, 0 7px 12px rgba(0,0,0,.6), 0 0 18px rgba(255,40,20,.55), 0 0 40px rgba(255,40,20,.25), inset 0 -8px 12px rgba(60,0,0,.6), inset 0 0 14px rgba(255,120,100,.35) !important}
+/* --- 黄金のSTOP：磨いた金属＋光のにじみ（光線はやめる） --- */
+.stopwrap::before{display:none !important}
+#s-play .stopwrap.goldopen{
+  background:
+    radial-gradient(circle at 50% 50%, transparent 58%, rgba(60,30,0,.6) 60%, transparent 66%),
+    conic-gradient(from 210deg, #fffbe8, #b07a10 12%, #ffe9a6 24%, #7a4e00 38%, #ffd86a 52%, #8a5a08 66%, #fff6d6 80%, #c08a18 92%, #fffbe8) !important;
+  box-shadow:0 1px 0 rgba(255,255,255,.5) inset, 0 -2px 3px rgba(80,40,0,.5) inset, 0 8px 14px rgba(0,0,0,.75),
+    0 0 14px rgba(255,214,90,.9), 0 0 34px rgba(255,190,40,.65), 0 0 70px rgba(255,170,0,.35) !important;
+  animation:ringopen .7s cubic-bezier(.2,1.4,.4,1), goldbreath 1.1s ease-in-out .7s infinite !important}
+@keyframes goldbreath{50%{box-shadow:0 1px 0 rgba(255,255,255,.5) inset, 0 -2px 3px rgba(80,40,0,.5) inset, 0 8px 14px rgba(0,0,0,.75),
+    0 0 20px rgba(255,224,120,1), 0 0 50px rgba(255,190,40,.8), 0 0 100px rgba(255,170,0,.45)}}
+/* 床（操作パネル）への光の映りこみ */
+#s-play .stopwrap.goldopen::after{content:""; position:absolute; left:50%; top:62%; width:170%; height:90%; transform:translateX(-50%); z-index:-1; pointer-events:none;
+  background:radial-gradient(ellipse at 50% 30%, rgba(255,200,70,.45), transparent 65%); filter:blur(4px)}
+#s-play .btn3d.stop.gold{animation:goldpress .6s cubic-bezier(.2,1.3,.4,1) !important; color:#4a2c00 !important; text-shadow:0 1px 0 rgba(255,240,200,.8) !important;
+  background:
+    radial-gradient(ellipse at 50% 30%, #fffdf2 0%, #ffe9a0 18%, transparent 42%),
+    radial-gradient(circle at 50% 60%, #ffd24a 0%, #e0a316 40%, #a66d00 75%, #5a3800 100%) !important;
+  box-shadow:0 5px 0 #4a2e00, 0 7px 12px rgba(0,0,0,.6), inset 0 -7px 10px rgba(110,60,0,.55), inset 0 2px 3px rgba(255,255,255,.9), inset 0 0 16px rgba(255,240,180,.6) !important}
+/* 金属の表面を光が流れる */
+#s-play .btn3d.stop.gold::after{left:-40%; right:auto; bottom:auto; top:0; width:40%; height:100%; border-radius:0;
+  background:linear-gradient(100deg, transparent, rgba(255,255,255,.85), transparent); transform:skewX(-18deg); animation:goldsheen 1.6s ease-in-out .5s infinite}
+@keyframes goldsheen{0%{left:-50%} 60%,100%{left:120%}}
+@keyframes goldpress{0%{transform:scale(.82); filter:brightness(2.2)} 60%{transform:scale(1.08)} 100%{transform:scale(1); filter:brightness(1)}}
+#s-play .btn3d.stop.press{transform:translateY(4px) !important}
+
+/* --- START：小さめ・メタルの縁＋光るアクリル --- */
+#s-play .startrow{gap:16px !important; margin-top:12px !important; padding:0 28px 2px !important}
+#s-play .start{flex:0 1 190px; margin:0 auto; height:46px !important; font-size:17px !important; letter-spacing:.2em; border-radius:9px !important; position:relative; overflow:hidden;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.55) 0%, rgba(255,255,255,.12) 45%, transparent 50%),
+    linear-gradient(180deg,#ffcf5a 0%,#ff9d0a 55%,#d86d00 100%) !important; color:#3a1a00 !important; text-shadow:0 1px 0 rgba(255,230,170,.7);
+  box-shadow:0 0 0 2px #1a1a1d, 0 0 0 4px #8d8d93, 0 0 0 5px #2a2a2e, 0 6px 0 5px #0a0a0b, 0 10px 18px rgba(0,0,0,.7), 0 0 26px rgba(255,160,20,.45), inset 0 -4px 8px rgba(120,50,0,.4) !important}
+#s-play .start:disabled{background:linear-gradient(180deg, rgba(255,255,255,.18), transparent 50%), linear-gradient(180deg,#4a4a50,#26262b) !important; color:#6a6a70 !important; text-shadow:none;
+  box-shadow:0 0 0 2px #1a1a1d, 0 0 0 4px #6a6a70, 0 0 0 5px #2a2a2e, 0 6px 0 5px #0a0a0b, 0 10px 18px rgba(0,0,0,.7) !important}
+#s-play .start.press{transform:translateY(5px) !important}
+#s-play .credit b{font-size:18px}
+
+/* --- 台の枠：本物の電球のように（粒＋にじみ＋照り返し） --- */
+.cf-side{overflow:visible}
+.cf-side::after{left:1px !important; width:8px !important; top:4px !important; bottom:4px !important; border-radius:0 !important; opacity:1 !important;
+  background:radial-gradient(circle at 50% 50%, #fff 0 1.2px, var(--accent) 2px, rgba(0,0,0,0) 3.6px) 0 0/8px 12px repeat-y !important;
+  box-shadow:none !important; filter:drop-shadow(0 0 2px var(--accent)) drop-shadow(0 0 5px var(--accent));
+  animation:bulbchase 1.2s steps(12) infinite !important}
+@keyframes bulbchase{to{background-position:0 12px}}
+/* 柱の光が画面側へにじむ */
+.cf-side::before{content:""; position:absolute; top:0; bottom:0; left:100%; width:22px; pointer-events:none;
+  background:linear-gradient(90deg, color-mix(in srgb, var(--accent) 22%, transparent), transparent); opacity:.6; transition:opacity .3s}
+/* リーチ中：金の電球が速く流れ、強くにじむ */
+.cab-frame.gold .cf-side::after{background:radial-gradient(circle at 50% 50%, #fff 0 1.5px, #ffd34d 2.4px, rgba(0,0,0,0) 4px) 0 0/8px 12px repeat-y !important;
+  filter:drop-shadow(0 0 3px #ffd34d) drop-shadow(0 0 8px #ffb300) drop-shadow(0 0 14px rgba(255,170,0,.7)); animation-duration:.4s !important}
+.cab-frame.gold .cf-side::before{background:linear-gradient(90deg, rgba(255,200,60,.45), transparent); opacity:1; width:40px}
+.cab-frame::after{box-shadow:none !important; animation:none !important;
+  background:
+    linear-gradient(180deg, rgba(255,205,80,.32), transparent 9%),
+    linear-gradient(0deg, rgba(255,205,80,.28), transparent 7%)}
+.cab-frame.gold::after{opacity:1; animation:goldspill 1.1s ease-in-out infinite !important}
+@keyframes goldspill{50%{opacity:.6}}
+/* リーチのリール枠：金の縁取り＋にじみ（チカチカ点滅はやめる） */
+.cabinet .reel.reach{animation:reelglow 1.1s ease-in-out infinite !important}
+@keyframes reelglow{
+  0%,100%{box-shadow:0 0 0 2px #fff1b8, 0 0 0 4px #c98e12, 0 0 14px 2px rgba(255,205,70,.75), 0 0 34px 6px rgba(255,170,0,.35), inset 0 0 16px rgba(255,214,90,.45)}
+  50%{box-shadow:0 0 0 2px #fffbe6, 0 0 0 4px #e8ab22, 0 0 22px 4px rgba(255,220,110,.95), 0 0 56px 12px rgba(255,170,0,.5), inset 0 0 26px rgba(255,224,120,.7)}}
+.reel.tension{animation:reelglow .38s ease-in-out infinite !important}
 </style>
 </head>
 <body data-m="beer">
@@ -683,11 +871,14 @@ body{padding:var(--fTop) var(--fS) var(--fB)}
 <!-- ===== 台の決定 ===== -->
 <section class="screen" id="s-decide">
   <div class="wrap decide">
-    <div class="lead">あなたの台は</div>
-    <div class="mname" id="d-name"></div>
-    <div class="tags" id="d-tags"></div>
+    <div class="marquee-box">
+      <div class="lead">あなたの台は</div>
+      <div class="mname" id="d-name"></div>
+      <div class="tags" id="d-tags"></div>
+    </div>
+    <div class="d-maybe">この絵柄がそろうかも…!?</div>
     <div class="preview" id="d-prev"></div>
-    <button class="cta" id="d-go">台の前に座る</button>
+    <button class="cta" id="d-go"><span>台の前に座る</span><i>▶</i></button>
     <button class="qback" id="d-redo">質問をやり直す</button>
   </div>
 </section>
@@ -759,8 +950,10 @@ body{padding:var(--fTop) var(--fS) var(--fB)}
    設定
    ================================================================= */
 // リーチ演出の動画（速達生 鮮度の旅：出発の動画）。空にすると内蔵のアニメーション演出が流れます。
-const REACH_MP4 = "setup/sokunamatabi.mp4";
-const REACH_VIDEO = { beer:REACH_MP4, sake:REACH_MP4, wine:REACH_MP4 };
+const REACH_MP4S = ["setup/sokunamatabi.mp4", "setup/reach2.mp4"];   // リーチのたびにランダムで1本
+const REACH_VIDEO = { beer:REACH_MP4S, sake:REACH_MP4S, wine:REACH_MP4S };
+const reachList = m => [].concat(REACH_VIDEO[m]||[]).filter(Boolean);
+let nextReachSrc = null;
 
 // 台のモニターに流す「速達生便」の素材
 const TRUCK_IMG = "setup/truck.webp";
@@ -1068,9 +1261,44 @@ function burst(el){
   }
 }
 
+function renderQ2(){
+  const M = MACHINES[ans.m];
+  const T = [
+    {v:"すっきり", en:"CRISP",  icon:"💧", sub:"キレ・爽快・軽やか"},
+    {v:"しっとり", en:"MELLOW", icon:"🍯", sub:"コク・まろやか・余韻"},
+  ];
+  $("#qbody").innerHTML = `<div class="qstep q2">
+    <div class="qnum">STEP 2 / 2</div>
+    <div class="qtext"><span class="gold">${M.name}</span>の味は？</div>
+    <div class="tastes">
+      ${T.map((t,i)=>`<button class="tbtn t${i}" data-v="${t.v}" style="--i:${i}">
+        <span class="tb-bulbs"></span>
+        <span class="tb-en">${t.en}</span>
+        <span class="tb-icon">${t.icon}</span>
+        <span class="tb-name">${t.v}</span>
+        <span class="tb-sub">${t.sub}</span>
+        <span class="tb-maybe">そろうかも!?</span>
+        <span class="tb-syms">${M.pool[t.v].map(id=>`<b>${icon(id)}</b>`).join("")}</span>
+        <span class="tb-push">PUSH</span>
+      </button>`).join("")}
+    </div>
+    <button class="qback" id="qprev">‹ 台を選びなおす</button>
+  </div>`;
+  const btns = [...document.querySelectorAll(".tbtn")];
+  let locked = false;
+  btns.forEach(bn=>bn.onclick=()=>{
+    if(locked) return; locked = true; sfx.ctx();
+    btns.forEach(x=>x.classList.toggle("dim", x!==bn)); bn.classList.add("chosen");
+    sfx.lever(); setTimeout(()=>sfx.fanfare(false),150); buzz([30,40,60]); burst(bn);
+    setTimeout(()=>{ ans.taste = bn.dataset.v; decide(); }, 950);
+  });
+  $("#qprev").onclick = ()=>{ qi = 0; renderQ(); };
+}
+
 function renderQ(){
   document.querySelectorAll(".progress span").forEach((s,i)=>s.classList.toggle("on", i<=qi));
   if(qi===0) return renderQ1();
+  if(qi===1) return renderQ2();
   const q = QUESTIONS[qi];
   $("#qbody").innerHTML = `<div class="qstep q2">
     <div class="qnum">STEP ${qi+1} / 2</div>
@@ -1088,14 +1316,20 @@ function renderQ(){
   });
   const p=$("#qprev"); if(p) p.onclick=()=>{ qi--; renderQ(); };
 }
-function show(id){ document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("active", s.id===id)); window.scrollTo(0,0); }
+function show(id){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("active", s.id===id));
+  document.documentElement.classList.toggle("lockplay", id==="s-play");
+  window.scrollTo(0,0);
+}
+// 遊ぶ画面では、スクロールや引っぱりで画面が動かないようにする
+document.addEventListener("touchmove", e=>{ if(document.documentElement.classList.contains("lockplay")) e.preventDefault(); }, {passive:false});
 
 function decide(){
   const M = MACHINES[ans.m];
   document.body.dataset.m = ans.m;
   $("#d-name").textContent = M.name;
   $("#d-tags").innerHTML = `<span class="tag">${M.q}</span><span class="tag">${ans.taste}</span>`;
-  $("#d-prev").innerHTML = M.pool[ans.taste].map(id=>`<div>${icon(id)}</div>`).join("");
+  $("#d-prev").innerHTML = M.pool[ans.taste].map((id,i)=>`<div style="--i:${i}">${icon(id)}</div>`).join("");
   const wrap = $("#s-decide .decide"); wrap.classList.remove("revealed"); void wrap.offsetWidth; wrap.classList.add("revealed");
   show("s-decide");
   sfx.fanfare(false);
@@ -1122,7 +1356,7 @@ function shuffleStrip(list){
 
 function setupMachine(){
   tries = 0;
-  if(REACH_VIDEO[ans.m]) getVideo(REACH_VIDEO[ans.m]).load();
+  reachList(ans.m).forEach(src=>getVideo(src).load());
   const M = MACHINES[ans.m];
 
   $("#leds").innerHTML = Array.from({length:16},(_,i)=>`<i style="animation-delay:${-i*1.4/16}s"></i>`).join("");
@@ -1355,13 +1589,16 @@ const BUBBLES = [
   ["そろうかな…？","いい感じ！","鮮度MAX！","あと1つ！"],
   ["きまれー！","たのむっ！","届けー！","いっけー！"],
 ];
-stopBtns.forEach((b,i)=>b.addEventListener("pointerdown", ()=>{
-  const r = reels[i];
+let autoStopT = null;
+stopBtns.forEach((b,i)=>b.addEventListener("pointerdown", ()=>doStop(i)));
+function doStop(i){
+  const b = stopBtns[i], r = reels[i];
   if(b.disabled || r.state!=="spin") return;
+  clearTimeout(autoStopT);
   press(b); buzz(15); Delivery.jump(); sfx.hop();
   Delivery.say(pick(BUBBLES[Math.min(2, reels.filter(x=>x.state!=="spin").length)]));
-  const pv = REACH_VIDEO[ans.m] && getVideo(REACH_VIDEO[ans.m]);
-  if(pv && !pv.primed){ pv.primed = true; pv.muted = false; const pr = pv.play(); if(pr) pr.then(()=>{ pv.pause(); pv.currentTime = 0; }).catch(()=>{}); }
+  reachList(ans.m).forEach(src=>{ const pv = getVideo(src);
+    if(!pv.primed){ pv.primed = true; pv.muted = false; const pr = pv.play(); if(pr) pr.then(()=>{ pv.pause(); pv.currentTime = 0; }).catch(()=>{}); } });
   const committed = reels.filter(x=>x.state!=="spin").length;   // すでに止めた（止めている）リール数
   const pred = targetFor(i, committed);
   const last3 = committed===2;                    // 最後のリール
@@ -1371,12 +1608,12 @@ stopBtns.forEach((b,i)=>b.addEventListener("pointerdown", ()=>{
   for(let k=0;k<L*2;k++){ if(pred(base-k)){ T=base-k; break; } }
   const d = r.offset - T;
   r.anim = last3
-    ? {o0:r.offset, T, d, t0:performance.now(), dur: 1300 + d*60, slow:true, lastCell: Math.floor(r.offset)}
+    ? {o0:r.offset, T, d, t0:performance.now(), dur: 900 + d*45, slow:true, lastCell: Math.floor(r.offset)}
     : {o0:r.offset, T, d, t0:performance.now(), dur: Math.min(900, Math.max(260, 2400*d/r.v/1.6))};
-  if(last3){ clearInterval(spinTicker); }
+  if(last3){ clearInterval(spinTicker); r.el.classList.add("tension"); sfx.heart(); }
   r.state = "stopping";
   setButtons();
-}));
+}
 
 // リーチの色：上に行くほど7（大当たり）が来やすい
 const TIERS = ["blue","green","red","gold","rainbow"];
@@ -1445,6 +1682,7 @@ async function onStopped(i){
       const left = [0,1,2].find(k=>!stopped.includes(k));
       reachLock = true; setButtons();
       reels[left].el.classList.add("reach");
+      $("#cabFrame").classList.add("gold");
       $("#cab").dataset.tier = outcome.tier;
       $("#cab").classList.add("fever");
       setLCD("REACH!!", true);
@@ -1457,10 +1695,19 @@ async function onStopped(i){
       reachLock = false; setButtons();
       setLCD(rareReach ? "★ PREMIUM ★ STOPを押せ！" : "最後のSTOPを押せ！", true);
       spinTicker = setInterval(()=>sfx.tick(420+Math.random()*80,.02), 110);
+      // 最後のSTOPが黄金に開く
+      const sw = stopBtns[left].parentElement; sw.classList.remove("goldopen"); void sw.offsetWidth; sw.classList.add("goldopen");
+      stopBtns[left].classList.add("gold"); sfx.goldopen(); buzz([30,30,60]);
+      // 押さなくても、少し待つと自動で止まる
+      clearTimeout(autoStopT); autoStopT = setTimeout(()=>doStop(left), 2600);
     }
   }
   if(stopped.length===3){
-    clearInterval(spinTicker);
+    clearInterval(spinTicker); clearTimeout(autoStopT);
+    $("#cabFrame").classList.remove("gold");
+    document.querySelectorAll(".stopwrap").forEach(w=>w.classList.remove("goldopen"));
+    stopBtns.forEach(b=>b.classList.remove("gold"));
+    reelEls.forEach(e=>e.classList.remove("tension"));
     reelEls.forEach(e=>e.classList.remove("reach"));
     delete $("#cab").dataset.tier;
     $("#cab").classList.remove("fever");
@@ -1639,7 +1886,7 @@ const TIER_STYLE = {
   gold:   {stops:["#fffbe6","#ffe27a","#d9a21a","#fff1b0","#e0a816","#8a5a00"], rim:["#fff6cf","#b8860b"], glow:"#ffd34d", lines:"255,235,170"},
 };
 function drawReachText(c, w, h, ms, cy, tier){
-  const st = TIER_STYLE[tier] || TIER_STYLE.gold, rainbow = tier==="rainbow";
+  const st = TIER_STYLE.gold, rainbow = false;   // 「リーチ!!」の文字はいつも金色
   // 虹：背景にも虹色の光をまわす
   if(rainbow){
     c.save(); c.globalCompositeOperation="lighter"; c.translate(w/2,cy); c.rotate(ms/900);
@@ -1696,7 +1943,8 @@ function playReach(m, rare, tier="gold"){
     let shrinkAt = null, done = false, raf, video = null, videoStarted = false, curT = 0;
     const ovPx = ()=> parseFloat(getComputedStyle($("#cab")).getPropertyValue("--ov")) || 0;
 
-    if(REACH_VIDEO[m]){ video = getVideo(REACH_VIDEO[m]); if(video.error) video = null; }
+    const list = reachList(m).filter(src=>!getVideo(src).error);
+    if(list.length){ video = getVideo(pick(list)); }
     const startVideo = ()=>{
       if(!video || videoStarted) return; videoStarted = true;
       video.currentTime = 0; video.muted = false; video.playbackRate = VIDEO_RATE;
@@ -1712,24 +1960,34 @@ function playReach(m, rare, tier="gold"){
       drawReachText(c, w, h, e, (h-ov)/2, tier);
     };
     // 動画：少しずつズームインしながら、入りの一瞬だけ画面を揺らして躍動感を出す
+    // 動画は切らずに全体を見せる（すき間は同じ動画をぼかして敷く）
     const drawVideo = (c,w,h)=>{
-      const pr = video.duration ? video.currentTime/video.duration : 0;
-      const z = 1.02 + pr*.14, kick = Math.max(0, 1-video.currentTime/.45);
-      const sc = Math.max(w/video.videoWidth, h/video.videoHeight)*z, vw=video.videoWidth*sc, vh=video.videoHeight*sc;
-      const jx = Math.sin(performance.now()/22)*6*kick, jy = Math.cos(performance.now()/19)*5*kick;
+      const vw0=video.videoWidth, vh0=video.videoHeight;
+      const cs = Math.max(w/vw0, h/vh0);
+      c.save(); c.filter="blur(18px) brightness(.55)"; c.drawImage(video,(w-vw0*cs*1.1)/2,(h-vh0*cs*1.1)/2,vw0*cs*1.1,vh0*cs*1.1); c.restore();
+      const pr = video.duration ? video.currentTime/video.duration : 0, kick = Math.max(0, 1-video.currentTime/.4);
+      const sc = Math.min(w/vw0, h/vh0)*(1 + pr*.05), vw=vw0*sc, vh=vh0*sc;
+      const jx = Math.sin(performance.now()/22)*4*kick, jy = Math.cos(performance.now()/19)*3*kick;
       c.drawImage(video,(w-vw)/2+jx,(h-vh)/2+jy,vw,vh);
     };
     const videoReady = ()=> video && video.readyState>=2 && video.videoWidth;
+    let vReadyAt = 0;
     const paint = (c,w,h,isMonitor)=>{
-      const e = (shrinkAt!==null ? shrinkAt : performance.now()) - t0;
+      const now = performance.now(), e = (shrinkAt!==null ? shrinkAt : now) - t0;
       if(e < INTRO+EXP){ intro(c,w,h,e,isMonitor); return; }
-      const xf = clamp01((e-INTRO-EXP)/XF);                 // トラック → 動画をなめらかに切り替え
-      if(xf<1){ intro(c,w,h,e,isMonitor); }
-      else { c.fillStyle="#000"; c.fillRect(0,0,w,h); }
+      // 動画の絵が来てから切り替える（来るまではトラックの映像のまま＝黒い画面にならない）
+      if(video && !vReadyAt && videoReady() && video.currentTime>0) vReadyAt = now;
+      const xf = video ? (vReadyAt ? clamp01((now-vReadyAt)/XF) : 0) : clamp01((e-INTRO-EXP)/XF);
+      if(xf<1) intro(c,w,h,Math.min(e, INTRO+EXP+XF),isMonitor);
       c.save(); c.globalAlpha = xf*xf*(3-2*xf);
-      if(videoReady()) drawVideo(c,w,h);
+      if(video && vReadyAt) drawVideo(c,w,h);
       else if(!video){ SCENES[m](c,w,h,curT,parts,rare); if(rare) goldBurst(c,w,h,curT); }
       c.restore();
+      // 終わり：モニターへ戻りながら、トラックの映像へふわっと戻す
+      if(shrinkAt!==null){
+        const p = clamp01((now-shrinkAt)/SHR), a = clamp01((p-.35)/.65);
+        if(a>0){ c.save(); c.globalAlpha=a; Delivery.draw(c,w,h,now, isMonitor ? ovPx() : ovPx()*a); c.restore(); }
+      }
     };
 
     mon.classList.add("live");
@@ -1940,6 +2198,8 @@ const sfx = (()=>{
     },
     feed:()=>{ for(let i=0;i<9;i++) noise(.16,.18,"bandpass",900+(i%2)*200,4,i*.2); tone(1400,.08,.12,"square",1.85); tone(1900,.12,.1,"square",1.95); },
     spin:()=>{ for(let i=0;i<7;i++) noise(.09,.22,"bandpass",1500+i*180,3,i*.16,0,.3); tone(300,1.1,.1,"sawtooth",0,1400,.3); },
+    goldopen:()=>{ tone(800,.5,.12,"triangle",0,2400,.5); noise(.6,.2,"highpass",5000,.7,.05,0,.6); [1047,1319,1568,2093].forEach((f,i)=>tone(f,.25,.08,"square",.1+i*.06,0,.4)); },
+    heart:()=>{ [0,.32,.64].forEach(w=>{ tone(62,.16,.6,"sine",w,40); tone(58,.14,.45,"sine",w+.14,38); }); },
     hop:()=>{ tone(420,.12,.1,"triangle",0,880); noise(.05,.15,"bandpass",1500,2); },
     // 予告：ドーン
     boom:()=>{ tone(70,1.1,.7,"sine",0,32); noise(.9,.4,"lowpass",300,1,0,80,.6); },
