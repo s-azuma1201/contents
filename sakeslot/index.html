@@ -840,7 +840,7 @@ html.lockplay #s-play{height:calc(100svh - var(--fTop) - var(--fB)); min-height:
 /* 吸い込まれる絵柄 */
 .flyer{position:fixed; z-index:70; display:grid; place-items:center; pointer-events:none; border-radius:10px;
   background:radial-gradient(circle, rgba(255,240,190,.9), rgba(255,211,77,.35) 55%, transparent 72%);
-  animation:flyup .75s cubic-bezier(.55,0,.75,.2) forwards}
+  animation:flyup 1.35s cubic-bezier(.5,0,.7,.25) both}
 .flyer img{width:80%; height:80%; object-fit:contain; filter:drop-shadow(0 0 6px #fff) drop-shadow(0 0 14px #ffd34d)}
 @keyframes flyup{
   0%{transform:translate(0,0) scale(1); opacity:1; filter:brightness(1.4)}
@@ -857,7 +857,7 @@ html.lockplay #s-play{height:calc(100svh - var(--fTop) - var(--fB)); min-height:
 #cardStage.out .cardClip::before{opacity:1; transition:opacity .4s .3s}
 .cardBtns{padding:10px 10px 4px; border-radius:14px; background:rgba(8,8,10,.82); box-shadow:0 -6px 20px rgba(0,0,0,.6)}
 /* 一気にシューッと出て、少し揺れて止まる（裏向き） */
-.tcard.feed{animation:feedslide 1s cubic-bezier(.2,.8,.25,1) forwards !important}
+.tcard.feed{animation:feedslide 1.7s cubic-bezier(.25,.7,.25,1) forwards !important}
 @keyframes feedslide{
   0%{transform:translateY(-102%) rotateY(180deg) rotateZ(0)}
   62%{transform:translateY(5%) rotateY(180deg) rotateZ(.8deg)}
@@ -868,6 +868,30 @@ html.lockplay #s-play{height:calc(100svh - var(--fTop) - var(--fB)); min-height:
 #cardStage.out .tcard{transform:translateY(var(--ty,18px)) scale(var(--s,1.04)) rotateX(var(--rx)) rotateY(calc(360deg + var(--ry))) !important;
   transition:transform .85s cubic-bezier(.3,1.25,.4,1) !important}
 #cardStage:not(.out) .tcard:not(.feed){transform:translateY(-102%) rotateY(180deg)}
+
+/* ===== 質問の画面も固定 ===== */
+html.lockplay #s-q,html.lockplay #s-decide{height:calc(100svh - var(--fTop) - var(--fB)); min-height:0; overflow:hidden; touch-action:none}
+#s-q .wrap,#s-decide .wrap{will-change:transform}
+#s-q .wrap{padding-top:10px; padding-bottom:10px}
+#s-q .progress{margin:12px 0 14px}
+
+/* ===== カードの裏面（マルト水谷） ===== */
+.tc-back{gap:14px !important;
+  background:
+    repeating-linear-gradient(45deg, rgba(255,255,255,.06) 0 1px, transparent 1px 9px),
+    repeating-linear-gradient(-45deg, rgba(255,255,255,.06) 0 1px, transparent 1px 9px),
+    radial-gradient(circle at 50% 42%, #1d4fa8 0%, #10306e 45%, #071a3e 100%) !important;
+  box-shadow:0 0 0 2px #0b0b0b, inset 0 0 0 6px #e8edf6, inset 0 0 0 8px #0d2a5e, inset 0 0 0 9px #c9a043, 0 20px 46px rgba(0,0,0,.75) !important}
+.tb-frame{position:absolute; inset:18px; border-radius:10px; pointer-events:none;
+  box-shadow:inset 0 0 0 1px rgba(201,160,67,.8), inset 0 0 0 5px rgba(255,255,255,.04), inset 0 0 0 6px rgba(201,160,67,.45)}
+.tb-frame::before,.tb-frame::after{content:"✦"; position:absolute; color:#c9a043; font-size:14px; left:50%; transform:translateX(-50%)}
+.tb-frame::before{top:6px} .tb-frame::after{bottom:6px}
+.tb-plate{width:78%; padding:16px 14px; border-radius:12px; background:linear-gradient(180deg,#ffffff,#eef2f8);
+  box-shadow:0 0 0 3px #c9a043, 0 0 0 5px #0d2a5e, 0 0 0 6px #c9a043, 0 10px 24px rgba(0,0,0,.45), 0 0 40px rgba(120,170,255,.35)}
+.tb-plate img{display:block; width:100%; height:auto}
+.tb-ring{display:none}
+.tb-title{color:#f3e2a8 !important; text-shadow:0 0 10px rgba(255,214,120,.5) !important; font-size:16px !important}
+.tb-sub{color:#9fb4d8 !important}
 </style>
 </head>
 <body data-m="beer">
@@ -1329,6 +1353,7 @@ function renderQ2(){
 }
 
 function renderQ(){
+  setTimeout(fitScreen, 0); setTimeout(fitScreen, 700);
   document.querySelectorAll(".progress span").forEach((s,i)=>s.classList.toggle("on", i<=qi));
   if(qi===0) return renderQ1();
   if(qi===1) return renderQ2();
@@ -1351,9 +1376,20 @@ function renderQ(){
 }
 function show(id){
   document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("active", s.id===id));
-  document.documentElement.classList.toggle("lockplay", id==="s-play");
+  document.documentElement.classList.toggle("lockplay", true);
   window.scrollTo(0,0);
+  fitScreen();
 }
+function fitScreen(){
+  const sc = document.querySelector(".screen.active"); if(!sc || sc.id==="s-play") return;
+  const w = sc.querySelector(".wrap"); if(!w) return;
+  w.style.transform = ""; 
+  const avail = sc.clientHeight, need = w.scrollHeight;
+  const k = need > avail ? Math.max(.6, avail/need) : 1;
+  w.style.transformOrigin = "50% 0"; w.style.transform = k<1 ? `scale(${k.toFixed(3)})` : "";
+}
+addEventListener("resize", fitScreen);
+document.documentElement.classList.add("lockplay");
 // 遊ぶ画面では、スクロールや引っぱりで画面が動かないようにする
 document.addEventListener("touchmove", e=>{ if(document.documentElement.classList.contains("lockplay")) e.preventDefault(); }, {passive:false});
 
@@ -1364,7 +1400,7 @@ function decide(){
   $("#d-tags").innerHTML = `<span class="tag">${M.q}</span><span class="tag">${ans.taste}</span>`;
   $("#d-prev").innerHTML = M.pool[ans.taste].map((id,i)=>`<div style="--i:${i}">${icon(id)}</div>`).join("");
   const wrap = $("#s-decide .decide"); wrap.classList.remove("revealed"); void wrap.offsetWidth; wrap.classList.add("revealed");
-  show("s-decide");
+  show("s-decide"); setTimeout(fitScreen, 50);
   sfx.fanfare(false);
 }
 $("#d-go").onclick = ()=>{ setupMachine(); show("s-play"); const c=$("#cab"); c.classList.remove("enter"); void c.offsetWidth; c.classList.add("enter"); sfx.ctx(); };
@@ -1590,14 +1626,15 @@ function loop(now){
 function easeSlide(x){ return 1-Math.pow(1-x,4); }
 function easeOutBack(x){ const c1=1.25, c3=c1+1; return 1 + c3*Math.pow(x-1,3) + c1*Math.pow(x-1,2); }
 
-const busy = ()=> reels.some(r=>r.state!=="stopped") || reachLock;
+let stopLock = false, uiLock = false;   // stopLock：止めている最中 ／ uiLock：当たり・ハズレの演出中
+const busy = ()=> reels.some(r=>r.state!=="stopped") || reachLock || uiLock;
 
 function setButtons(){
   const spinning = reels.some(r=>r.state!=="stopped");
-  $("#start").disabled = spinning || reachLock;
-  $("#start").classList.toggle("live", !spinning && !reachLock);
+  $("#start").disabled = spinning || reachLock || uiLock;
+  $("#start").classList.toggle("live", !spinning && !reachLock && !uiLock);
   stopBtns.forEach((b,i)=>{
-    const ok = reels[i] && reels[i].state==="spin" && reels[i].v>=V_MAX*.95 && !reachLock;
+    const ok = reels[i] && reels[i].state==="spin" && reels[i].v>=V_MAX*.95 && !reachLock && !stopLock && !uiLock;
     b.disabled = !ok; b.classList.toggle("live", ok);
   });
 }
@@ -1606,7 +1643,8 @@ setInterval(()=>{ if(reels.length) setButtons(); }, 100);
 function press(btn){ btn.classList.add("press"); setTimeout(()=>btn.classList.remove("press"),120); }
 
 $("#start").addEventListener("pointerdown", ()=>{
-  if(busy()) return;
+  if(busy() || $("#start").disabled) return;
+  stopLock = false;
   press($("#start"));
   sfx.ctx(); sfx.lever(); buzz(25);
   clearWin();
@@ -1626,7 +1664,8 @@ let autoStopT = null;
 stopBtns.forEach((b,i)=>b.addEventListener("pointerdown", ()=>doStop(i)));
 function doStop(i){
   const b = stopBtns[i], r = reels[i];
-  if(b.disabled || r.state!=="spin") return;
+  if(b.disabled || r.state!=="spin" || stopLock || reachLock || uiLock) return;
+  stopLock = true;
   clearTimeout(autoStopT);
   press(b); buzz(15); Delivery.jump(); sfx.hop();
   Delivery.say(pick(BUBBLES[Math.min(2, reels.filter(x=>x.state!=="spin").length)]));
@@ -1706,6 +1745,7 @@ function targetFor(i, committed){
 
 async function onStopped(i){
   sfx.clunk(); buzz(12);
+  setTimeout(()=>{ stopLock = false; setButtons(); }, 220);   // 止まりきって少し待ってから次を押せる
   const stopped = reels.map((r,k)=>r.state==="stopped"?k:-1).filter(k=>k>=0);
   setButtons();
   if(stopped.length===2){
@@ -1751,6 +1791,7 @@ async function onStopped(i){
 }
 
 function lose(wasReach){
+  uiLock = true; setButtons(); setTimeout(()=>{ uiLock = false; setButtons(); }, 1300);
   sfx.miss(); buzz(wasReach ? [80,60,80] : 40);
   const t = $("#losetoast");
   t.innerHTML = wasReach ? `<b>おしい!!</b><small>次は来るかも…!?</small>` : `<b>ざんねん…</b><small>もう一回まわしてみよう！</small>`;
@@ -1760,13 +1801,14 @@ function lose(wasReach){
 }
 function win(id){
   const rare = id===RARE.id;
+  uiLock = true; setButtons();
   if(rare){ wins++; $("#wins").textContent = wins; }
   $("#cab").classList.add("win");
   reels.forEach(r=>{ const idx = mod(Math.round(r.offset),L)+L+1; r.strip.children[idx].classList.add("win"); });
   setLCD(rare ? "★ JACKPOT ★" : "BINGO!! 今夜の一杯が決定", true);
   sfx.fanfare(rare); buzz([40,60,40,60,120]);
   if(rare) confetti(60); else confetti(24);
-  setTimeout(()=>flyToSlot(()=>showCard(id, rare)), 700);
+  setTimeout(()=>flyToSlot(()=>showCard(id, rare)), 900);
 }
 function flyToSlot(done){
   const slot = document.querySelector(".cf-slot i").getBoundingClientRect();
@@ -1778,12 +1820,12 @@ function flyToSlot(done){
     f.style.left = r.left+"px"; f.style.top = r.top+"px"; f.style.width = r.width+"px"; f.style.height = r.height+"px";
     if(img) f.appendChild(img.cloneNode(true));
     f.style.setProperty("--dx", (tx-(r.left+r.width/2))+"px"); f.style.setProperty("--dy", (ty-(r.top+r.height/2))+"px");
-    f.style.animationDelay = (k*90)+"ms";
-    document.body.appendChild(f); setTimeout(()=>f.remove(), 1100);
+    f.style.animationDelay = (k*160)+"ms";
+    document.body.appendChild(f); setTimeout(()=>f.remove(), 2000);
   });
   sfx.suck();
-  setTimeout(()=>{ $("#cabFrame").classList.add("feeding","charged"); buzz(30); }, 620);
-  setTimeout(()=>{ $("#cabFrame").classList.remove("charged"); done(); }, 900);
+  setTimeout(()=>{ $("#cabFrame").classList.add("feeding","charged"); buzz(30); }, 1650);
+  setTimeout(()=>{ $("#cabFrame").classList.remove("charged"); done(); }, 2100);
 }
 function clearWin(){
   $("#cab").classList.remove("win");
@@ -1805,6 +1847,7 @@ const CARD_THEME = {
   seven:  {cA:"#ffd34d", cB:"#111111", cC:"#ffffff", bg1:"#22222a", bg2:"#0b0b10", ink:"#ffffff", plate1:"#1a1a1a", plate2:"#000000", pt:"#ffd34d"},
 };
 let cardNo = 0;
+const MARUTO_LOGO = DECOR.find(d=>d.id==="maruto").img;   // カード裏面のロゴ
 const CARD_PHOTO = ITEMS.truck.img;   // カードの写真（ひとまず全部トラック）
 function showCard(id, rare){
   const it = rare ? null : ITEMS[id];
@@ -1828,12 +1871,17 @@ function showCard(id, rare){
       <div class="tc-foot"><span>TONIGHT'S SLOT</span><span>No.${String(cardNo).padStart(3,"0")}</span></div>
     </div>
     <div class="tc-foil"></div><div class="tc-glare"></div><div class="tc-gloss"></div>
-    <div class="tc-back"><div class="tb-ring"><span>7</span></div><div class="tb-title">TONIGHT'S SLOT</div><div class="tb-sub">RARE CARD</div></div>`;
+    <div class="tc-back">
+      <div class="tb-frame"></div>
+      <div class="tb-plate"><img src="${MARUTO_LOGO}" alt=""></div>
+      <div class="tb-title">TONIGHT'S SLOT</div>
+      <div class="tb-sub">OFFICIAL CARD</div>
+    </div>`;
   $("#cardBtns").classList.remove("show");
   st.classList.remove("out"); st.classList.add("show");
   void card.offsetWidth; card.classList.add("feed");
   sfx.feed(); $("#cabFrame").classList.add("feeding");
-  setTimeout(()=>$("#cabFrame").classList.remove("feeding"), 1000);
+  setTimeout(()=>$("#cabFrame").classList.remove("feeding"), 1700);
   card.style.removeProperty("--s"); card.style.removeProperty("--ty"); card.style.transform = "";
   card.style.setProperty("--rx","0deg"); card.style.setProperty("--ry","0deg");
   setTimeout(()=>{
@@ -1849,8 +1897,8 @@ function showCard(id, rare){
     // 表が見えた瞬間にピカッ
     setTimeout(()=>{ const f=$("#cardFlash"); f.classList.remove("on"); void f.offsetWidth; f.classList.add("on");
       sfx.fanfare(rare); buzz([40,60,90]); if(rare) confetti(60); }, 420);
-  }, 1050);
-  setTimeout(()=>$("#cardBtns").classList.add("show"), 2200);
+  }, 1900);
+  setTimeout(()=>$("#cardBtns").classList.add("show"), 3200);
 }
 (()=>{
   const card = ()=>$("#tcard");
@@ -1876,7 +1924,7 @@ function showCard(id, rare){
   };
   requestAnimationFrame(idle);
 })();
-function closeCard(){ $("#cardStage").classList.remove("show","out"); }
+function closeCard(){ $("#cardStage").classList.remove("show","out"); uiLock = false; setButtons(); }
 
 /* ===== 結果（旧） ===== */
 function showResult(id, rare){
@@ -2246,7 +2294,7 @@ const sfx = (()=>{
       noise(rare?1.8:1,.15,"highpass",5000,.7,seq.length*.18-.18,0,.7);         // シャーン
       tone(rare?130:196, 1.2, .25, "sine", seq.length*.18-.18);
     },
-    feed:()=>{ noise(.85,.22,"bandpass",700,2,0,2400,.2); tone(180,.8,.08,"sawtooth",0,420); tone(1400,.06,.12,"square",.85); tone(1900,.1,.1,"square",.92); },
+    feed:()=>{ noise(1.5,.22,"bandpass",600,2,0,2400,.2); tone(160,1.45,.08,"sawtooth",0,420); tone(1400,.06,.12,"square",1.5); tone(1900,.1,.1,"square",1.58); },
     flip:()=>{ noise(.25,.3,"bandpass",2200,2,0,600,.3); tone(500,.3,.08,"triangle",0,1200,.3); },
     spin:()=>{ for(let i=0;i<7;i++) noise(.09,.22,"bandpass",1500+i*180,3,i*.16,0,.3); tone(300,1.1,.1,"sawtooth",0,1400,.3); },
     goldopen:()=>{ tone(800,.5,.12,"triangle",0,2400,.5); noise(.6,.2,"highpass",5000,.7,.05,0,.6); [1047,1319,1568,2093].forEach((f,i)=>tone(f,.25,.08,"square",.1+i*.06,0,.4)); },
