@@ -835,6 +835,39 @@ html.lockplay #s-play{height:calc(100svh - var(--fTop) - var(--fB)); min-height:
   0%,100%{box-shadow:0 0 0 2px #fff1b8, 0 0 0 4px #c98e12, 0 0 14px 2px rgba(255,205,70,.75), 0 0 34px 6px rgba(255,170,0,.35), inset 0 0 16px rgba(255,214,90,.45)}
   50%{box-shadow:0 0 0 2px #fffbe6, 0 0 0 4px #e8ab22, 0 0 22px 4px rgba(255,220,110,.95), 0 0 56px 12px rgba(255,170,0,.5), inset 0 0 26px rgba(255,224,120,.7)}}
 .reel.tension{animation:reelglow .38s ease-in-out infinite !important}
+
+/* ===== カード：つながりのある出し方 ===== */
+/* 吸い込まれる絵柄 */
+.flyer{position:fixed; z-index:70; display:grid; place-items:center; pointer-events:none; border-radius:10px;
+  background:radial-gradient(circle, rgba(255,240,190,.9), rgba(255,211,77,.35) 55%, transparent 72%);
+  animation:flyup .75s cubic-bezier(.55,0,.75,.2) forwards}
+.flyer img{width:80%; height:80%; object-fit:contain; filter:drop-shadow(0 0 6px #fff) drop-shadow(0 0 14px #ffd34d)}
+@keyframes flyup{
+  0%{transform:translate(0,0) scale(1); opacity:1; filter:brightness(1.4)}
+  25%{transform:translate(0,-10px) scale(1.15)}
+  100%{transform:translate(var(--dx),var(--dy)) scale(.12); opacity:.85; filter:brightness(2.2)}}
+/* 取り出し口がチャージされて光る */
+.cab-frame.charged .cf-slot{box-shadow:0 0 0 2px #fff3c4, 0 0 24px #ffd34d, 0 0 50px rgba(255,180,0,.7); animation:slotkick .3s ease}
+.cab-frame.charged .cf-slot i{background:#fff6d6; box-shadow:0 0 10px #fff, 0 0 24px #ffd34d}
+@keyframes slotkick{50%{transform:translateX(-50%) scale(1.06)}}
+/* 台は見せたまま、少しだけ暗く */
+#cardStage{background:radial-gradient(ellipse at 50% 30%, rgba(30,22,8,.35), rgba(0,0,0,.62)) !important; animation:fadein .35s ease}
+@keyframes fadein{from{opacity:0}}
+#cardStage .cardClip::before{opacity:0}
+#cardStage.out .cardClip::before{opacity:1; transition:opacity .4s .3s}
+.cardBtns{padding:10px 10px 4px; border-radius:14px; background:rgba(8,8,10,.82); box-shadow:0 -6px 20px rgba(0,0,0,.6)}
+/* 一気にシューッと出て、少し揺れて止まる（裏向き） */
+.tcard.feed{animation:feedslide 1s cubic-bezier(.2,.8,.25,1) forwards !important}
+@keyframes feedslide{
+  0%{transform:translateY(-102%) rotateY(180deg) rotateZ(0)}
+  62%{transform:translateY(5%) rotateY(180deg) rotateZ(.8deg)}
+  78%{transform:translateY(-2%) rotateY(180deg) rotateZ(-.6deg)}
+  90%{transform:translateY(1%) rotateY(180deg) rotateZ(.3deg)}
+  100%{transform:translateY(0) rotateY(180deg) rotateZ(0)}}
+/* 1回だけ裏返して大きく */
+#cardStage.out .tcard{transform:translateY(var(--ty,18px)) scale(var(--s,1.04)) rotateX(var(--rx)) rotateY(calc(360deg + var(--ry))) !important;
+  transition:transform .85s cubic-bezier(.3,1.25,.4,1) !important}
+#cardStage:not(.out) .tcard:not(.feed){transform:translateY(-102%) rotateY(180deg)}
 </style>
 </head>
 <body data-m="beer">
@@ -1733,7 +1766,24 @@ function win(id){
   setLCD(rare ? "★ JACKPOT ★" : "BINGO!! 今夜の一杯が決定", true);
   sfx.fanfare(rare); buzz([40,60,40,60,120]);
   if(rare) confetti(60); else confetti(24);
-  setTimeout(()=>showCard(id, rare), 1200);
+  setTimeout(()=>flyToSlot(()=>showCard(id, rare)), 700);
+}
+function flyToSlot(done){
+  const slot = document.querySelector(".cf-slot i").getBoundingClientRect();
+  const tx = slot.left + slot.width/2, ty = slot.top + slot.height/2;
+  const cells = reels.map(r=>r.strip.children[mod(Math.round(r.offset),L)+L+1]);
+  cells.forEach((cell,k)=>{
+    const r = cell.getBoundingClientRect(), img = cell.querySelector("img,svg");
+    const f = document.createElement("div"); f.className = "flyer";
+    f.style.left = r.left+"px"; f.style.top = r.top+"px"; f.style.width = r.width+"px"; f.style.height = r.height+"px";
+    if(img) f.appendChild(img.cloneNode(true));
+    f.style.setProperty("--dx", (tx-(r.left+r.width/2))+"px"); f.style.setProperty("--dy", (ty-(r.top+r.height/2))+"px");
+    f.style.animationDelay = (k*90)+"ms";
+    document.body.appendChild(f); setTimeout(()=>f.remove(), 1100);
+  });
+  sfx.suck();
+  setTimeout(()=>{ $("#cabFrame").classList.add("feeding","charged"); buzz(30); }, 620);
+  setTimeout(()=>{ $("#cabFrame").classList.remove("charged"); done(); }, 900);
 }
 function clearWin(){
   $("#cab").classList.remove("win");
@@ -1783,7 +1833,7 @@ function showCard(id, rare){
   st.classList.remove("out"); st.classList.add("show");
   void card.offsetWidth; card.classList.add("feed");
   sfx.feed(); $("#cabFrame").classList.add("feeding");
-  setTimeout(()=>$("#cabFrame").classList.remove("feeding"), 2000);
+  setTimeout(()=>$("#cabFrame").classList.remove("feeding"), 1000);
   card.style.removeProperty("--s"); card.style.removeProperty("--ty"); card.style.transform = "";
   card.style.setProperty("--rx","0deg"); card.style.setProperty("--ry","0deg");
   setTimeout(()=>{
@@ -1795,12 +1845,12 @@ function showCard(id, rare){
     card.dataset.t0 = performance.now();
     card.style.transform = "translateY(0px) scale(1) rotateX(0deg) rotateY(180deg)";   // 出きった位置から回し始める
     card.classList.remove("feed"); void card.offsetWidth;
-    st.classList.add("out"); sfx.spin();
-    // 回りきって表が見えた瞬間にピカッ
+    st.classList.add("out"); sfx.flip();
+    // 表が見えた瞬間にピカッ
     setTimeout(()=>{ const f=$("#cardFlash"); f.classList.remove("on"); void f.offsetWidth; f.classList.add("on");
-      sfx.fanfare(rare); buzz([40,60,90]); if(rare) confetti(60); }, 1250);
-  }, 2000);
-  setTimeout(()=>$("#cardBtns").classList.add("show"), 3500);
+      sfx.fanfare(rare); buzz([40,60,90]); if(rare) confetti(60); }, 420);
+  }, 1050);
+  setTimeout(()=>$("#cardBtns").classList.add("show"), 2200);
 }
 (()=>{
   const card = ()=>$("#tcard");
@@ -1816,7 +1866,7 @@ function showCard(id, rare){
     const c = card(), st = $("#cardStage");
     if(c && st.classList.contains("out") && now-lastTouch > 1500){
       const t = (now - (+c.dataset.t0||0))/1000;
-      if(t > 1.6){
+      if(t > 1.1){
         const rx = Math.sin(t*.9)*7, ry = Math.sin(t*.6+1)*12;
         c.style.setProperty("--rx", rx.toFixed(2)+"deg"); c.style.setProperty("--ry", ry.toFixed(2)+"deg");
         c.style.setProperty("--mx", (50+ry*3).toFixed(1)+"%"); c.style.setProperty("--my", (50-rx*4).toFixed(1)+"%");
@@ -2196,10 +2246,12 @@ const sfx = (()=>{
       noise(rare?1.8:1,.15,"highpass",5000,.7,seq.length*.18-.18,0,.7);         // シャーン
       tone(rare?130:196, 1.2, .25, "sine", seq.length*.18-.18);
     },
-    feed:()=>{ for(let i=0;i<9;i++) noise(.16,.18,"bandpass",900+(i%2)*200,4,i*.2); tone(1400,.08,.12,"square",1.85); tone(1900,.12,.1,"square",1.95); },
+    feed:()=>{ noise(.85,.22,"bandpass",700,2,0,2400,.2); tone(180,.8,.08,"sawtooth",0,420); tone(1400,.06,.12,"square",.85); tone(1900,.1,.1,"square",.92); },
+    flip:()=>{ noise(.25,.3,"bandpass",2200,2,0,600,.3); tone(500,.3,.08,"triangle",0,1200,.3); },
     spin:()=>{ for(let i=0;i<7;i++) noise(.09,.22,"bandpass",1500+i*180,3,i*.16,0,.3); tone(300,1.1,.1,"sawtooth",0,1400,.3); },
     goldopen:()=>{ tone(800,.5,.12,"triangle",0,2400,.5); noise(.6,.2,"highpass",5000,.7,.05,0,.6); [1047,1319,1568,2093].forEach((f,i)=>tone(f,.25,.08,"square",.1+i*.06,0,.4)); },
     heart:()=>{ [0,.32,.64].forEach(w=>{ tone(62,.16,.6,"sine",w,40); tone(58,.14,.45,"sine",w+.14,38); }); },
+    suck:()=>{ tone(300,.7,.12,"sine",0,1800,.4); noise(.7,.18,"bandpass",600,2,0,5000,.5); tone(1568,.18,.1,"triangle",.62,0,.5); },
     hop:()=>{ tone(420,.12,.1,"triangle",0,880); noise(.05,.15,"bandpass",1500,2); },
     // 予告：ドーン
     boom:()=>{ tone(70,1.1,.7,"sine",0,32); noise(.9,.4,"lowpass",300,1,0,80,.6); },
