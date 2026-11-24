@@ -903,6 +903,23 @@ html.lockplay #s-q,html.lockplay #s-decide{height:calc(100svh - var(--fTop) - va
 #cardStage.out .tcard{transition:transform .7s cubic-bezier(.15,.9,.3,1.15) !important}
 /* リールの絵柄はセルの大きさに合わせる */
 .cell img{height:calc(var(--cell) * .86) !important}
+
+/* ===== お酒の注意書き（台座） ===== */
+:root{--fB:22px !important}
+.cf-bottom{display:flex; align-items:center; justify-content:center; padding-bottom:env(safe-area-inset-bottom)}
+.cf-bottom span{font-size:9.5px; letter-spacing:.04em; color:#c9c1b4; white-space:nowrap; transform:translateY(1px)}
+@supports(height:env(safe-area-inset-bottom)){ :root{--fB:calc(22px + env(safe-area-inset-bottom)) !important} .cf-bottom{height:var(--fB) !important} }
+
+/* ===== 横向きのときは縦向きをお願いする ===== */
+.rotate-msg{display:none}
+@media (orientation:landscape) and (max-height:520px){
+  .rotate-msg{display:flex; position:fixed; inset:0; z-index:200; flex-direction:column; align-items:center; justify-content:center; gap:18px; text-align:center;
+    background:radial-gradient(ellipse at 50% 40%, #2a1e0c, #050403 75%); color:#f3e6c8; font-size:17px; line-height:1.7}
+  .rotate-msg b{color:#ffd34d}
+  .rm-phone{width:44px; height:78px; border-radius:9px; border:3px solid #ffd34d; box-shadow:0 0 18px rgba(255,211,77,.5); position:relative; animation:rotphone 2s ease-in-out infinite}
+  .rm-phone::after{content:""; position:absolute; left:50%; bottom:5px; width:10px; height:3px; margin-left:-5px; border-radius:2px; background:#ffd34d}
+  @keyframes rotphone{0%,20%{transform:rotate(-90deg)} 55%,100%{transform:rotate(0)}}
+}
 </style>
 </head>
 <body data-m="beer">
@@ -913,9 +930,13 @@ html.lockplay #s-q,html.lockplay #s-decide{height:calc(100svh - var(--fTop) - va
     <div class="cf-slot"><em>CARD</em><i></i><b></b></div>
   </div>
   <div class="cf-side l"></div><div class="cf-side r"></div>
-  <div class="cf-bottom"></div>
+  <div class="cf-bottom"><span>飲酒は20歳になってから。飲酒運転は法律で禁止されています。</span></div>
 </div>
 <div class="frame-inner" id="frameInner"></div>
+<div class="rotate-msg" aria-live="polite">
+  <div class="rm-phone"></div>
+  <p>スマホを<b>縦向き</b>にして<br>お楽しみください</p>
+</div>
 
 <!-- 絵柄（SVGスプライト）はJSで生成 -->
 <div id="sprite" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true"></div>
