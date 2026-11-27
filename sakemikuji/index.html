@@ -8,28 +8,26 @@
 
 <!--
 ==========================================================================
-  速達おみくじ便（テーブルQR → アンケート → カメラでグラスを映すと、速達トラックがおみくじを届けにくる）
+  速達おみくじ便（スッキリ整理・改修版）
+  テーブルQR → 季節選択＆年齢確認 → カメラでグラスを映す → 卓上ジオラマ＆泡からおみくじ
 ==========================================================================
-  ■ コンセプト
-    カメラに映る「いつものテーブル」に、速達生ビールのトラックがやってくる。
-    選んだ季節の景色がお店のまわりに広がり、花びら・泡・紅葉・雪が舞う。
-    トラックはグラスのまわりを走って目の前で停車し、「速達」の小包でおみくじを届けてくれる。
-
   ■ 置き場所（このフォルダの中身をまるごと置けば動きます）
-    index.html / omikuji_pop.mp4 / omikuji_pop.webm / image/（景色16枚＋トラック）
+    index.html / omikuji_pop.mp4 / omikuji_pop.webm / image/
     ※カメラは HTTPS でないと使えません（GitHub Pages ならOK）。
     ※テーブルごとにQRを分けるなら URL に ?table=12 を付けると、回答に入ります。
 
   ■ 編集する場所（このすぐ下の APP_CONFIG だけ触ればOK）
     SHOP            … 店名・ロゴ画像
-    SURVEY          … アンケートの選択肢
-    SURVEY_SENDER   … 回答の送信先（Googleフォーム／スプレッドシート(GAS)／API）
+    SURVEY          … 結果前の「ひと言」設定
+    SURVEY_SENDER   … 感想の送信先（Googleフォーム／スプレッドシート(GAS)／API）
     FORTUNES        … 運勢・確率(weight)・メッセージ・おすすめ料理
     SEASONS         … 春夏秋冬の文言・舞うもの・色味
-    SCENERY         … まわりに広がる景色（どの名所をどの方向に置くか）
+    ROOM            … 店内の空中に浮かぶ演出（飛行船・気球・泡雲）
+    DIORAMA         … テーブル上のジオラマ（道路・建物・トラック）
+    REVEAL          … 泡の中のおみくじ動画
     DELIVERY        … おみくじを届けるトラック
     DETECTION       … グラス検出（AI）の設定
-    PERFORMANCE     … 画質・負荷の設定（古いスマホで重いときはここ）
+    PERFORMANCE     … 画質・負荷の設定
 ==========================================================================
 -->
 <script>
@@ -41,81 +39,65 @@ window.APP_CONFIG = {
     logoUrl: ""                         // ← ロゴ画像のURL（空ならロゴ枠を表示）
   },
 
-  /* ---------- アンケートの選択肢 ---------- */
+  /* ---------- 結果前の「ひと言」設定 ---------- */
   SURVEY: {
-    drinks: ["生ビール", "ハイボール", "サワー", "ソフトドリンク", "その他"],          // Q1
-    points: ["キレ", "泡のきめ細かさ", "冷たさ", "のどごし", "グラス", "料理との相性"], // Q3
-    commentMaxLength: 200,                                                             // ひと言の最大文字数
-    // おみくじを開けたあと、結果の前に聞く「ひと言」。ワンタップで入れられる候補
+    commentMaxLength: 200,
     quickComments: ["最高においしい！", "泡がクリーミー", "キレがいい！", "料理と合う！", "また来ます！"],
     commentRequired: true   // true=ひと言を入れないと結果が見られない ／ false=空のままでも結果へ進める
   },
 
-  /* ---------- 回答の送信先 ----------
-     type を切り替えるだけで送信先が変わります。
-       "none"       … 送信しない（開発・テスト用。ブラウザのコンソールに出力）
-       "googleForm" … Googleフォームへ送信
-       "gas"        … Google Apps Script 経由でスプレッドシートへ送信
-       "api"        … 自前のAPIへ JSON をPOST
-     ※個人情報（名前・メール等）は一切集めません。
+  /* ---------- 感想の送信先 ----------
+     type: "none"（テスト用） / "googleForm" / "gas" / "api"
   */
   SURVEY_SENDER: {
     type: "none",
-
-    // Googleフォーム：フォームの「事前入力したURLを取得」で entry.xxxx の番号を調べて書き換え
     googleForm: {
       actionUrl: "https://docs.google.com/forms/d/e/XXXXXXXXXXXX/formResponse",
       entries: {
-        drink:   "entry.1111111111", // Q1 ドリンク
-        rating:  "entry.2222222222", // Q2 評価(1〜5)
-        points:  "entry.3333333333", // Q3 良かった点（チェックボックス）
-        comment: "entry.4444444444", // ひと言（おみくじを開けたあとに入力）
-        season:  "entry.6666666666", // 選んだ季節（不要なら空文字 ""）
-        table:   "entry.5555555555"  // テーブル番号（不要なら空文字 ""）
+        comment: "entry.4444444444", // ひと言
+        season:  "entry.6666666666", // 選んだ季節（不要なら ""）
+        table:   "entry.5555555555"  // テーブル番号（不要なら ""）
       }
     },
-
-    // スプレッドシート（GAS）：下のサンプルをApps Scriptに貼り「ウェブアプリ」として公開→URLを貼る
-    //   function doPost(e) {
-    //     const d = JSON.parse(e.postData.contents);
-    //     const sh = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
-    //     sh.appendRow([new Date(), d.table, d.season, d.drink, d.rating, d.points.join("、"), d.comment, d.fortune]);
-    //     return ContentService.createTextOutput("ok");
-    //   }
     gas: { url: "https://script.google.com/macros/s/XXXXXXXXXXXX/exec" },
-
-    // 自前API：JSON を POST します
     api: { url: "https://example.com/api/survey", headers: {} }
   },
 
-  /* ---------- 運勢・メッセージ・おすすめ料理 ----------
-     weight     … 出やすさ（数字の比率。合計が100でなくてもOK）
-     fireworks  … 開けたときに上がる花火の数
-     dish.image … 料理画像のURL（空なら emoji を表示）
-  */
+  /* ---------- 運勢・メッセージ・おすすめ料理 ---------- */
   FORTUNES: [
     { rank: "大吉", weight: 10, fireworks: 6,
       message: "最高の一杯にはこれ！今日は何をしてもうまくいく日。",
+      sakeLuck: "極上。泡まで黄金に輝く絶好調の一杯",
+      wish: "思いがけぬ良縁とともに叶う",
+      lucky: "最初のひと口で目を閉じて味わう",
       dish: { name: "名物 若鶏の唐揚げ", desc: "外はカリッ、中はジュワッ。生ビールとの相性は120点！", image: "", emoji: "🍗" } },
     { rank: "中吉", weight: 20, fireworks: 4,
       message: "泡のように幸せがふわっと広がる予感。",
+      sakeLuck: "上々。仲間と乾杯するほど運気上昇",
+      wish: "焦らず楽しめば自然と近づく",
+      lucky: "隣の席の笑顔に心の中で乾杯",
       dish: { name: "やみつき塩だれキャベツ", desc: "シャキシャキ食感でビールがどんどん進みます。", image: "", emoji: "🥬" } },
     { rank: "小吉", weight: 25, fireworks: 3,
       message: "小さな幸せを見つけられる日。まずは乾杯から！",
+      sakeLuck: "良好。丁寧な一杯が心をほどく",
+      wish: "身近なところにうれしい発見あり",
+      lucky: "冷たいグラスを両手で包んでみる",
       dish: { name: "茹でたて枝豆", desc: "定番だからこそ間違いなし。塩加減にこだわっています。", image: "", emoji: "🫛" } },
     { rank: "吉", weight: 30, fireworks: 3,
       message: "のんびりが吉。おかわりの一杯で運気アップ。",
+      sakeLuck: "安定。二杯目に思わぬご褒美あり",
+      wish: "ゆるりと構えれば吉報が届く",
+      lucky: "いつもと違うおつまみを一品追加",
       dish: { name: "炭火焼き鳥 盛り合わせ", desc: "香ばしい炭の香りに、キレのある一杯を。", image: "", emoji: "🍢" } },
     { rank: "末吉", weight: 15, fireworks: 2,
       message: "これから運気が上り調子！冷えた一杯で元気をチャージ。",
+      sakeLuck: "上昇中。飲み干すほどにツキが巡る",
+      wish: "後半にかけてグッと好転する兆し",
+      lucky: "声に出して「おいしい！」と言ってみる",
       dish: { name: "ほくほくポテトフライ", desc: "揚げたてアツアツ。冷たいビールとの温度差がたまらない！", image: "", emoji: "🍟" } }
   ],
 
-  /* ---------- 春夏秋冬（えらんだ季節が、トップ・景色・舞うもの・色味・結果にぜんぶ反映） ----------
-     particle … 舞うもの "petal"(花びら) / "bubble"(ビールの泡) / "leaf"(紅葉) / "snow"(雪)
-     tint     … カメラ映像にうっすら重ねる色、tintOpacity … その濃さ（0〜1）
-     sky      … カメラなしモードの空の色 [上, 地平線]
-  */
+  /* ---------- 春夏秋冬 ---------- */
   SEASONS: {
     haru:  { jp: "春", en: "SPRING", particle: "petal",  tint: "#ffb3d1", tintOpacity: 0.12, sky: ["#8fc7ee", "#f8e4ec"], msg: "桜の花びらといっしょに、春の一杯をどうぞ。" },
     natsu: { jp: "夏", en: "SUMMER", particle: "bubble", tint: "#7fd8ff", tintOpacity: 0.10, sky: ["#4f9fe0", "#e6f6ff"], msg: "夏の空の下で、冷たい一杯をぐいっと。" },
@@ -123,117 +105,71 @@ window.APP_CONFIG = {
     fuyu:  { jp: "冬", en: "WINTER", particle: "snow",   tint: "#cfe6ff", tintOpacity: 0.14, sky: ["#1c2448", "#9fb3d8"], msg: "雪の道をこえてきた、キリッと冷たい一杯を。" }
   },
 
-  /* ---------- まわりに広がる景色（sokutatubin の名所画像を使用） ----------
-     mode   … "surround"=ぐるり360°景色 ／ "front"=正面だけ ／ "none"=景色なし（カメラ映像だけ）
-     slots  … どの名所を、どの方向(deg: 0=最初の正面, 90=右, 180=うしろ, -90=左)に置くか
-              spot は fuji / kyoto / tsumago / shirakawa / okazaki / tokyo / yokohama / nagoya / tg / izakaya
-              road は画像の中の道路の高さ（上から0〜1）。ここが床の高さにそろいます
-     画像は dir + spot + "_" + 季節 + ".webp"（例：izakaya_aki.webp）。季節のない写真は img に直接ファイル名を書く
-     sign … その方向の空に出る看板（{shop} は店名に置き換わります）。type は "start" / "via" / "goal"
-     route … 「出発」から「到着」へ、道路の上を光の矢印が流れる（速達生の鮮度ルート）
-  */
+  /* ---------- 画像フォルダ・パーティクル数 ---------- */
   SCENERY: {
-    mode: "none",          // ← 背景の景色は使わない（お店の中がそのまま見える）。"surround" で景色ありに戻せます
-    dir: "image/",          // 景色の画像を置くフォルダ（index.html と同じ場所の image フォルダ）
-    // 背景②「速達生の旅路」：うしろ＝出発（物流センター）→ 左右＝道中 → 正面＝到着（このお店）
-    slots: [
-      { spot: "izakaya", deg: 0,   road: 0.88, sign: { type: "goal",  text: "到着｜{shop}" } },
-      { spot: "nagoya",  deg: 90,  road: 0.85, sign: { type: "via",   text: "名古屋 経由" } },
-      { img: "image/maruto_soko.webp", deg: 180, road: 0.86, sign: { type: "start", text: "出発｜速達生 物流センター" } },
-      { spot: "fuji",    deg: -90, road: 0.92, sign: { type: "via",   text: "富士山 経由" } }
-    ],
-    route: true,
-    arOpacity: 0.92,   // カメラ画面での景色の濃さ（0〜1）
-    particles: 140     // 舞うものの数（減らすと軽くなる）
+    dir: "image/",
+    heroSpot: "izakaya",   // トップ背景に使う季節画像（izakaya_haru.webp 等）
+    particles: 70          // 舞うものの数（軽量化済み）
   },
 
-  /* ---------- お店の中を360°動きまわる演出 ----------
-     背景を使わないかわりに、店内のどこを見ても何かが動いているようにします */
+  /* ---------- 店内の空中に浮かぶ演出（スッキリ案） ---------- */
   ROOM: {
-    blimp: true,            // 「速達生」の飛行船が、天井近くをゆっくり一周
-    blimpText: "",           // 飛行船に入れる文字（"" で文字なし）
-    bannerText: "",          // 飛行船がひっぱる旗の文字（"" で旗なし）
-    blimpImage: "blimp_beer.webp", // ビールデザインの飛行船（いただいたイラストを黄色＋泡で塗り直したもの）。"" で図形の仮素材
-    balloons: 7,            // ジョッキの気球の数（0で無し）。スマホの縦画面は横の視野がせまいので多めに
-    // Canva で生成した画像素材（image フォルダ）。空 "" にすると図形の仮素材に戻ります
+    blimp: true,
+    blimpImage: "blimp_beer.webp",
+    balloons: 3,                        // ジョッキの気球（7 → 3 に整理）
     balloonImage: "balloon_photo.webp",
-    birds: 4,      birdImage: "bird_photo.webp",     // 店内を飛ぶ鶴
-    bottles: 4,    bottleImage: "bottle_photo.webp", // ふわふわ浮かぶ一升瓶
-    planet: true,  planetImage: "planet_photo.webp", // 天井近くに浮かぶビールの惑星
-    foamClouds: 8                                    // 背景のビール泡雲の数（0で無し）
+    foamClouds: 4                       // ビール泡雲（8 → 4 に整理）
   },
 
-  /* ---------- 卓上ジオラマ（卓上A）----------
-     グラスが見つかると、テーブルの上に道路が現れ、名古屋城・物流センター・お店の並びが立ち上がります（地面の台はなし）。
-     1台目の速達トラックは物流センターで樽を積んでお店に届け（くり返し）、2台目は反対車線を走ります。
-  */
+  /* ---------- 卓上ジオラマ ---------- */
   DIORAMA: {
     enabled: true,
-    baseRadius: 0.25,      // ジオラマの台の半径(m)
-    roadRadius: 0.085,     // 道路のカーブの半径(m)。道路は「横に長い楕円（陸上トラック形）」でグラスを囲みます
-    roadStraight: 0.08,    // 道路のまっすぐな部分の半分の長さ(m)。建物はこの直線に沿って横に並びます
-    truckLength: 0.075,    // ジオラマ用のトラックの長さ(m)
-    speed: 0.1,            // トラックの速さ(m/秒)
-    trucks: 2,             // 走るトラックの台数（1 か 2）
-    landmark: "名古屋城",   // うしろに立つ名所（いまは名古屋城のみ。"" で無し）
-    shrine: true,          // 神社（拝殿・おみくじ掛け）と、道路をまたぐ大きな鳥居
-    shrineName: "速達生神社", // 神社の名前（拝殿の扁額）
-    // 素材の差し替え：イラスト画像（背景透明の PNG / WebP）を image フォルダに入れてファイル名を書くと、
-    // 図形で作った建物の代わりにその画像が立ちます。height は高さ(m)。空 "" のあいだは図形の仮素材を表示
+    roadRadius: 0.085,
+    roadStraight: 0.08,
+    truckLength: 0.075,
+    speed: 0.1,
+    trucks: 2,
+    landmark: true,
+    shrine: true,
+    shrineName: "速達生神社",
     assets: {
-      // ※高画質版に差し替え済み：鳥居・神社・物流倉庫・惑星・居酒屋・名古屋城・茶屋・甘味処・気球。残り（土産物屋・酒屋・鶴・一升瓶）は小さいプレビュー
-      // height＝高さ(m)。大きく見せたい城・神社・鳥居・物流倉庫は大きめ、お店は小さめにして差をつけています
-      castle:    { file: "castle_photo.webp",    height: 0.18 },  // 名古屋城（いちばん大きく）
-      shrine:    { file: "shrine_photo.webp",    height: 0.085 }, // 速達生神社（おみくじ掛けつき）
-      torii:     { file: "torii_photo.webp",     height: 0.105 }, // （大鳥居は道路をまたぐため立体で表示。この画像はプレビュー用）
-      warehouse: { file: "warehouse_photo.webp", height: 0.07 },  // 物流倉庫
-      shop:      { file: "izakaya_photo.webp",   height: 0.06 },  // 配達先の和の居酒屋
-      street:    ["chaya_photo.webp", "kanmi_photo.webp", "miyage_photo.webp", "sakaya_photo.webp"] // 門前町のお店（茶屋・甘味処・土産物屋・酒屋）
+      castle:    { file: "castle_photo.webp",    height: 0.135 }, // 神社が主役に見えるよう少し控えめに
+      shrine:    { file: "shrine_photo.webp",    height: 0.145 }, // 速達生神社を大きく主役サイズに
+      warehouse: { file: "warehouse_photo.webp", height: 0.07 },
+      shop:      { file: "izakaya_photo.webp",   height: 0.06 },
+      street:    ["chaya_photo.webp", "kanmi_photo.webp", "miyage_photo.webp", "sakaya_photo.webp"]
     },
-    shopHeight: 0.048,     // 並びのお店（茶屋・甘味処・土産物屋・酒屋）の高さ(m)
-    toriiHeight: 0.11,     // 道路をまたぐ大鳥居の高さ(m)
-    // 道ぞいに並ぶお店（name=看板, wall=壁, roof=屋根, noren=のれん の色）
-    street: [
-      { name: "茶屋",     wall: "#5a3a22", roof: "#2f3036", noren: "#1d2a5a" },
-      { name: "甘味処",   wall: "#e9d3b0", roof: "#2b2b30", noren: "#fffaf0" },
-      { name: "土産物",   wall: "#6a4426", roof: "#2f3036", noren: "#8a2433" },
-      { name: "酒屋",     wall: "#5a3a22", roof: "#2b2b30", noren: "#1d2a5a" }
-    ],
-    warehouseName: "速達生",               // 物流センターの看板
-    loadText: "積み込み中…", departText: "出発！", deliverText: "お届け！鮮度◎"
+    shopHeight: 0.048,
+    toriiHeight: 0.145, // 道路をまたぐ大鳥居を堂々とサイズアップ
+    loadText: "積み込み中…", departText: "出発！", deliverText: "ご縁お届け◎"
   },
 
-  /* ---------- おみくじの出し方 ----------
-     style … "bubble"=グラスから、おみくじの入った泡がふわっと出てくる（案B）
-             "parcel"=トラックが停車して「速達の小包」を届ける（案A）
-     open  … "tap"=タップで開ける ／ "shake"=スマホを振って「乾杯！」で開ける（案D）
-  */
+  /* ---------- おみくじの出し方（タップで即・泡のおみくじ） ---------- */
   REVEAL: {
-    style: "bubble",
-    video: "omikuji_pop.mp4",   // 泡の中に入るおみくじの動画（白い背景は自動で透明にします）
-    videoWebm: "omikuji_pop.webm", // MP4 が再生できないブラウザ用（無ければ "" でOK）
-    open: "tap",
-    shakePower: 1.0     // "shake" のとき、どれくらい振れば開くか（大きいほどたくさん振る）
+    video: "omikuji_pop.mp4",
+    videoWebm: "omikuji_pop.webm",
+    keyMinWhite: 0.88,      // 白抜きの明るさ基準（上げるほど白い紙が残り、下げるほど背景が抜けやすい）
+    keyMaxChroma: 0.10      // 白背景とみなす彩度の上限（色のある部分を誤って抜かないようにする）
   },
 
   /* ---------- おみくじを届けるトラック ---------- */
   DELIVERY: {
-    truckImage: "image/truck.webp", // 横向きのトラック画像（運転席が左向きの絵）
-    length: 0.13,     // トラックの長さ(m)。グラス(約15cm)と比べた大きさ
-    radius: 0.17,     // グラスの中心から何mのところを走るか
-    speed: 0.14,      // 速さ(m/秒)
-    laps: 0           // 届ける前に「余分に」何周するか（0=グラスの向こう側から半周して手前で停車）
+    truckImage: "image/truck.webp",
+    length: 0.13,
+    radius: 0.17,
+    speed: 0.14
   },
 
   /* ---------- グラス検出（MediaPipe Object Detector） ---------- */
   DETECTION: {
-    enabled: true,                              // false にするとAI検出を使わず「呼ぶ」ボタンで進行
-    labels: ["cup", "wine glass", "bottle"],    // ドリンクとみなす物体（COCOのラベル名）
-    scoreThreshold: 0.35,                       // 検出の確信度（上げると誤検出が減るが反応しにくくなる）
-    requiredHits: 2,                            // 何回連続で見つけたら「ドリンク」と判定するか
-    intervalMs: 250,                            // 検出の間隔(ms)。大きくすると軽くなる
-    rescueAfterMs: 5000,                        // この時間見つからなければ「速達便を呼ぶ」ボタンを出す
-    glassHeightM: 0.15,                         // グラスの実際の高さ(m)。距離とテーブルの高さの推定に使う
+    enabled: true,
+    labels: ["cup", "wine glass", "bottle"],
+    scoreThreshold: 0.26,   // 暗い店内・透明グラスでも反応しやすいように少し緩和（0.35 → 0.26）
+    requiredHits: 2,
+    minBoxRatio: 0.08,      // 画面の高さに対して小さすぎるノイズ検出を除外する基準
+    intervalMs: 220,        // 検出間隔を少し詰めて反応をキビキビさせる
+    rescueAfterMs: 3500,    // 3.5秒見つからなければ「速達便を呼ぶ」ボタンを表示（5秒 → 3.5秒）
+    glassHeightM: 0.15,
     bundleUrl: "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs",
     wasmUrl:   "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm",
     modelUrl:  "https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/int8/1/efficientdet_lite0.tflite"
@@ -241,10 +177,9 @@ window.APP_CONFIG = {
 
   /* ---------- 性能 ---------- */
   PERFORMANCE: {
-    maxPixelRatio: 1.5,     // 描画解像度の上限（1にするとかなり軽くなる）
-    antialias: false,       // ギザギザ軽減（重くなるので古い端末では false 推奨）
-    maxFps: 60,             // フレームレート上限（30にすると電池・発熱が抑えられる）
-    sceneryWidth: 1200      // 景色画像の解像度（800にすると軽くなる）
+    maxPixelRatio: 1.5,
+    antialias: false,
+    maxFps: 60
   },
 
   THREE_URL: "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
@@ -253,16 +188,13 @@ window.APP_CONFIG = {
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Oswald:wght@500;700&family=Zen+Kaku+Gothic+New:wght@500;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@500;700;900&display=swap" rel="stylesheet">
 
 <style>
-/* ==========================================================
-   色（速達生ビールの世界観：夜・金色のビール・泡の白・鮮度の水色・速達の赤）
-   ========================================================== */
 :root{
-  --night:#07080f; --night2:#121424;
+  --night:#07080f;
   --gold:#ffc53d; --gold2:#ffe08a; --amber:#e88a10;
-  --foam:#fffaf0; --fresh:#6fd6ff; --red:#e5322d;
+  --fresh:#6fd6ff; --red:#e5322d;
   --ink:#1d1b22; --paper:#fffdf6; --line:#e8c3b8;
   --dela:"Dela Gothic One","Zen Kaku Gothic New",sans-serif;
 }
@@ -276,7 +208,7 @@ button{font-family:inherit;color:inherit;border:0;background:none;cursor:pointer
 .screen{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
 .screen.active{display:flex}
 
-/* ---- 舞うもの（トップ・アンケート） ---- */
+/* ---- 舞うもの（トップ画面） ---- */
 #fx{position:fixed;inset:0;pointer-events:none;z-index:4;overflow:hidden}
 #fx i{position:absolute;top:-30px;display:block;animation:fall linear infinite}
 #fx.petal i{width:10px;height:7px;border-radius:70% 0 70% 0;background:linear-gradient(135deg,#ffe3ee,#ff9cc2)}
@@ -286,7 +218,7 @@ button{font-family:inherit;color:inherit;border:0;background:none;cursor:pointer
 @keyframes fall{0%{transform:translate(0,0) rotate(0)}50%{transform:translate(30px,55vh) rotate(200deg)}100%{transform:translate(-10px,110vh) rotate(400deg)}}
 @keyframes rise{0%{transform:translate(0,0)}50%{transform:translate(12px,-55vh)}100%{transform:translate(-6px,-110vh)}}
 
-/* ---- ボタン ---- */
+/* ---- 共通ボタン・入力 ---- */
 .btn-main{display:block;width:100%;min-height:62px;border-radius:999px;font-size:1.15rem;font-weight:900;letter-spacing:.06em;margin-top:16px;color:#2a1600;
   background:linear-gradient(180deg,#ffe58f,var(--gold) 45%,var(--amber));
   box-shadow:0 8px 24px rgba(255,170,30,.45),inset 0 2px 0 rgba(255,255,255,.6),inset 0 -3px 0 rgba(150,70,0,.35);transition:transform .1s,opacity .2s}
@@ -295,6 +227,13 @@ button{font-family:inherit;color:inherit;border:0;background:none;cursor:pointer
 .btn-red{background:linear-gradient(180deg,#ff6b5e,var(--red) 60%,#b31f1a);color:#fff;box-shadow:0 8px 24px rgba(229,50,45,.45),inset 0 2px 0 rgba(255,255,255,.4)}
 .btn-ghost{background:rgba(255,255,255,.08);color:#fff;border:1.5px solid rgba(255,255,255,.4);box-shadow:none}
 .stamp-red{display:inline-flex;align-items:center;justify-content:center;border:3px solid var(--red);color:var(--red);border-radius:50%;font-weight:900;line-height:1}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{min-height:40px;padding:0 10px;border-radius:12px;border:1.5px solid rgba(255,255,255,.25);background:rgba(255,255,255,.05);font-size:13px;font-weight:900;flex:1 1 auto;transition:.15s}
+.chip.on{border-color:var(--gold);background:rgba(255,197,61,.18);color:var(--gold);box-shadow:0 0 0 1.5px var(--gold)}
+textarea{width:100%;min-height:78px;border-radius:10px;border:1.5px solid rgba(255,255,255,.25);padding:10px;font:inherit;font-size:16px;resize:none;background:rgba(0,0,0,.3);color:#fff;-webkit-user-select:text;user-select:text}
+textarea:focus{outline:none;border-color:var(--gold)}
+textarea::placeholder{color:rgba(255,255,255,.4)}
+.err{color:#ff9b8a;font-weight:700;text-align:center;min-height:1.4em;margin:4px 0 0}
 
 /* ---- 1. トップ ---- */
 #startScreen{justify-content:flex-start}
@@ -307,8 +246,12 @@ button{font-family:inherit;color:inherit;border:0;background:none;cursor:pointer
   background:linear-gradient(180deg,rgba(7,8,15,.55) 0%,rgba(7,8,15,0) 16%,rgba(7,8,15,0) 60%,rgba(7,8,15,.8) 82%,var(--night))}
 .hero > *{position:relative;z-index:1}
 .hero-top{position:absolute;top:calc(env(safe-area-inset-top) + 14px);left:16px;right:16px;display:flex;align-items:center;justify-content:space-between}
-.hero-badge{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:900;letter-spacing:.2em;text-shadow:0 1px 6px rgba(0,0,0,.7)}
+.hero-badge{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:900;letter-spacing:.18em;text-shadow:0 1px 6px rgba(0,0,0,.7)}
 .hero-badge .stamp-red{width:46px;height:46px;font-size:15px;background:rgba(255,255,255,.95);transform:rotate(-12deg)}
+.torii-crest{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;margin-bottom:6px;width:fit-content;
+  background:rgba(229,50,45,.88);border:1.5px solid rgba(255,224,138,.85);color:#fffdf6;font-size:11px;font-weight:900;letter-spacing:.18em;
+  box-shadow:0 4px 14px rgba(229,50,45,.45)}
+.torii-crest svg{width:16px;height:16px;flex:none}
 .logo-box{width:54px;height:54px;border-radius:50%;background:rgba(0,0,0,.35);border:1.5px dashed rgba(255,255,255,.6);display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:10px;font-weight:900;letter-spacing:.1em}
 .logo-box img{width:100%;height:100%;object-fit:cover}
 .kicker{margin:0;font-size:12px;font-weight:900;letter-spacing:.3em;color:var(--fresh);text-shadow:0 2px 10px rgba(0,0,0,.6)}
@@ -337,32 +280,7 @@ button{font-family:inherit;color:inherit;border:0;background:none;cursor:pointer
 .age-ng{margin-top:10px;color:#ff9b8a;font-weight:700;font-size:.9rem}
 .legal{font-size:.72rem;text-align:center;opacity:.8;margin:14px 0 0;line-height:1.6}
 
-/* ---- 2. アンケート ---- */
-#pageBg{position:fixed;inset:-20px;z-index:0;background:50% 100%/cover no-repeat;filter:blur(10px) brightness(.42) saturate(1.1);transition:background-image .4s}
-#surveyScreen{padding:calc(env(safe-area-inset-top) + 24px) 16px calc(env(safe-area-inset-bottom) + 24px)}
-.qa{position:relative;z-index:5;width:100%;max-width:460px}
-.qa-kicker{margin:0;font-size:12px;font-weight:900;letter-spacing:.3em;color:var(--fresh)}
-.qa-title{margin:4px 0 16px;font-family:var(--dela);font-weight:400;font-size:26px;line-height:1.3}
-.q{margin-bottom:14px;padding:14px;border-radius:14px;background:rgba(7,8,15,.55);border:1px solid rgba(255,255,255,.14);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
-.q-lab{margin:0 0 10px;font-weight:900;font-size:15px;display:flex;align-items:center;flex-wrap:wrap;gap:6px}
-.q-lab .no{padding:1px 8px;border-radius:6px;background:var(--gold);color:#2a1600;font-family:"Oswald",sans-serif;font-size:13px}
-.q-lab .req{font-size:10px;color:#fff;background:var(--red);border-radius:6px;padding:1px 6px}
-.q-lab .opt{font-size:10px;background:rgba(255,255,255,.2);border-radius:6px;padding:1px 6px}
-.chips{display:flex;flex-wrap:wrap;gap:8px}
-.chip{min-height:48px;padding:0 14px;border-radius:12px;border:1.5px solid rgba(255,255,255,.25);background:rgba(255,255,255,.05);font-size:15px;font-weight:900;flex:1 1 auto;transition:.15s}
-.chip.on{border-color:var(--gold);background:rgba(255,197,61,.18);color:var(--gold);box-shadow:0 0 0 1.5px var(--gold)}
-.stars{display:flex;justify-content:space-between;max-width:330px}
-.star{width:56px;height:56px;font-size:2.6rem;line-height:1;color:rgba(255,255,255,.2);padding:0;transition:transform .15s,color .15s}
-.star.on{color:var(--gold);text-shadow:0 0 14px rgba(255,190,80,.9)}
-.star:active{transform:scale(1.25)}
-.star-label{font-size:.85rem;margin-top:4px;min-height:1.2em;opacity:.85}
-textarea{width:100%;min-height:78px;border-radius:10px;border:1.5px solid rgba(255,255,255,.25);padding:10px;font:inherit;font-size:16px;resize:none;background:rgba(0,0,0,.3);color:#fff;-webkit-user-select:text;user-select:text}
-textarea:focus{outline:none;border-color:var(--gold)}
-textarea::placeholder{color:rgba(255,255,255,.4)}
-.err{color:#ff9b8a;font-weight:700;text-align:center;min-height:1.4em;margin:4px 0 0}
-.note{font-size:11px;color:#b6bbd0;text-align:center;margin:10px 0 0;line-height:1.6;letter-spacing:.05em}
-
-/* ---- 3. カメラ＋AR ---- */
+/* ---- 2. カメラ＋AR ---- */
 #arScreen{background:#000;overflow:hidden}
 #arScreen.nocam{background:var(--night)}
 #cam{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
@@ -375,6 +293,11 @@ textarea::placeholder{color:rgba(255,255,255,.4)}
 .guide small{display:block;font-weight:500;font-size:.78rem;opacity:.85;margin-top:3px}
 .season-tag{position:absolute;right:12px;top:calc(env(safe-area-inset-top) + 86px);display:flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:999px;background:rgba(7,8,15,.55);font-size:11px;font-weight:900;letter-spacing:.15em}
 .season-tag b{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--gold);color:#2a1600;font-family:var(--dela);font-weight:400;font-size:14px;letter-spacing:0}
+.sound-btn{position:absolute;left:12px;top:calc(env(safe-area-inset-top) + 86px);width:38px;height:38px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:18px;background:rgba(7,8,15,.62);border:1px solid rgba(255,197,61,.55);
+  pointer-events:auto;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);transition:transform .12s,opacity .2s}
+.sound-btn:active{transform:scale(.9)}
+.sound-btn.muted{opacity:.55;border-color:rgba(255,255,255,.3)}
 .status{position:absolute;left:12px;bottom:calc(env(safe-area-inset-bottom) + 12px);font-size:.72rem;background:rgba(0,0,0,.5);color:#fff;border-radius:999px;padding:5px 10px;max-width:70%}
 .finder{position:absolute;left:50%;top:58%;width:56vw;max-width:250px;aspect-ratio:3/4;transform:translate(-50%,-50%);
   background:
@@ -395,17 +318,6 @@ textarea::placeholder{color:rgba(255,255,255,.4)}
   box-shadow:0 4px 14px rgba(0,0,0,.4);pointer-events:auto;animation:bounce 1s ease-in-out infinite}
 .tap-label::after{content:"";position:absolute;left:50%;bottom:-9px;margin-left:-8px;border:8px solid transparent;border-top-color:var(--red);border-bottom:0}
 @keyframes bounce{0%,100%{margin-top:0}50%{margin-top:-8px}}
-.shake-ui{position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom) + 28px);transform:translateX(-50%);width:calc(100% - 48px);max-width:360px;
-  padding:12px 16px 14px;border-radius:18px;background:rgba(7,8,15,.7);border:1px solid rgba(255,197,61,.6);text-align:center;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
-.shake-ui .mugs{font-size:42px;line-height:1;display:flex;justify-content:center;gap:2px}
-.shake-ui .mugs span{display:inline-block;animation:clinkL .7s ease-in-out infinite}
-.shake-ui .mugs span + span{animation-name:clinkR}
-@keyframes clinkL{0%,100%{transform:rotate(-8deg) translateX(-10px)}50%{transform:rotate(14deg) translateX(4px)}}
-@keyframes clinkR{0%,100%{transform:scaleX(-1) rotate(-8deg) translateX(-10px)}50%{transform:scaleX(-1) rotate(14deg) translateX(4px)}}
-.shake-ui p{margin:6px 0 8px;font-weight:900;font-size:15px}
-.shake-ui .bar{height:12px;border-radius:999px;background:rgba(255,255,255,.15);overflow:hidden}
-.shake-ui .bar i{display:block;height:100%;width:0;border-radius:999px;background:linear-gradient(90deg,var(--gold2),var(--gold),var(--amber));box-shadow:0 0 12px rgba(255,197,61,.9);transition:width .1s}
-.shake-ui small{display:block;margin-top:6px;font-size:11px;opacity:.75}
 .dir-hint{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(229,50,45,.92);color:#fff;font-weight:900;font-size:1.1rem;padding:10px 18px;border-radius:999px;white-space:nowrap}
 .loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;color:#fff;font-weight:900;background:rgba(7,8,15,.6);pointer-events:none}
 .spinner{width:46px;height:46px;border-radius:50%;border:5px solid rgba(255,255,255,.2);border-top-color:var(--gold);animation:spin 1s linear infinite;margin-bottom:12px}
@@ -414,7 +326,7 @@ textarea::placeholder{color:rgba(255,255,255,.4)}
 #flash.on{animation:flash 1s ease-out}
 @keyframes flash{0%{opacity:0}15%{opacity:1}100%{opacity:0}}
 
-/* ---- 4. 結果（速達伝票ふうのおみくじ） ---- */
+/* ---- 3. 結果（速達伝票ふうのおみくじ） ---- */
 #result{position:fixed;inset:0;z-index:20;display:none;flex-direction:column;align-items:center;overflow-y:auto;
   background:linear-gradient(180deg,rgba(7,8,15,.2),rgba(7,8,15,.7) 40%,rgba(7,8,15,.9));
   padding:calc(env(safe-area-inset-top) + 24px) 16px calc(env(safe-area-inset-bottom) + 20px);-webkit-overflow-scrolling:touch}
@@ -423,9 +335,8 @@ textarea::placeholder{color:rgba(255,255,255,.4)}
   box-shadow:0 24px 50px -10px rgba(0,0,0,.7);background-image:repeating-linear-gradient(0deg,transparent 0 27px,rgba(229,50,45,.07) 27px 28px);
   transform-origin:50% 100%;animation:slipIn .9s cubic-bezier(.2,.9,.25,1.1) both}
 .slip::before{content:"";position:absolute;left:0;right:0;top:-8px;height:8px;background:radial-gradient(circle at 6px 8px,transparent 5px,var(--paper) 5.5px) repeat-x;background-size:12px 8px}
-@keyframes slipIn{0%{transform:perspective(900px) rotateX(-80deg) scaleY(.05);opacity:.4}50%{transform:perspective(900px) rotateX(0) scaleY(.05);opacity:1}100%{transform:rotate(-1deg)}} /* 紙が開く */
+@keyframes slipIn{0%{transform:perspective(900px) rotateX(-80deg) scaleY(.05);opacity:.4}50%{transform:perspective(900px) rotateX(0) scaleY(.05);opacity:1}100%{transform:rotate(-1deg)}}
 .slip > *{animation:fadeup .5s ease-out .7s both}
-/* ひと言を答えるまでは運勢をかくす */
 .slip .rv{display:none}
 .slip.revealed .lockbox{display:none}
 .slip.revealed .rv{display:block;animation:fadeup .5s ease-out both}
@@ -439,16 +350,22 @@ textarea::placeholder{color:rgba(255,255,255,.4)}
 .cc-title{margin:0;font-family:var(--dela);font-weight:400;font-size:19px;color:var(--gold)}
 .cc-sub{margin:4px 0 10px;font-size:12.5px;color:#d8dbe8}
 .comment-card .chips{margin-bottom:10px}
-.comment-card .chip{min-height:40px;font-size:13px;padding:0 10px}
 @keyframes fadeup{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 .slip-head{display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--red);padding-bottom:8px}
-.slip-head h2{margin:0;font-family:var(--dela);font-weight:400;font-size:19px;letter-spacing:.1em;color:var(--red)}
+.slip-head h2{margin:0;font-family:var(--dela);font-weight:400;font-size:18px;letter-spacing:.08em;color:var(--red);display:flex;align-items:center;gap:6px}
+.slip-head h2 svg{width:20px;height:20px;flex:none}
 .slip-head small{font-size:10px;font-weight:700;color:#8a7f78;letter-spacing:.1em;text-align:right;line-height:1.4}
 .rank-wrap{position:relative;text-align:center;padding:6px 0 2px}
+.rank-sub{font-size:11px;font-weight:900;letter-spacing:.3em;color:#b33a2f;margin-bottom:-4px}
 .rank{font-family:var(--dela);font-weight:400;font-size:5rem;line-height:1.15;color:var(--red)}
-.slip .stamp-red{position:absolute;right:4px;top:10px;width:64px;height:64px;font-size:20px;background:rgba(255,253,246,.6);animation:stampIn .5s cubic-bezier(.3,1.6,.5,1) 1.2s both}
+.slip .stamp-red{position:absolute;right:4px;top:10px;width:64px;height:64px;font-size:18px;background:rgba(255,253,246,.6);animation:stampIn .5s cubic-bezier(.3,1.6,.5,1) 1.2s both}
 @keyframes stampIn{0%{transform:rotate(14deg) scale(2.4);opacity:0}100%{transform:rotate(14deg) scale(1);opacity:.9}}
 .msg{text-align:center;font-weight:900;font-size:1.05rem;line-height:1.7;margin:0 4px 12px}
+.omikuji-grid{display:grid;gap:6px;margin:0 0 12px;padding:10px;border-radius:6px;background:rgba(229,50,45,.05);border:1px solid var(--line)}
+.omikuji-item{display:flex;align-items:baseline;gap:8px;font-size:.84rem;line-height:1.5;border-bottom:1px dashed rgba(229,50,45,.2);padding-bottom:5px}
+.omikuji-item:last-child{border-bottom:0;padding-bottom:0}
+.omikuji-item b{flex:none;display:inline-block;min-width:58px;text-align:center;font-size:.72rem;padding:2px 6px;border-radius:4px;background:var(--red);color:#fff;letter-spacing:.08em}
+.omikuji-item span{color:var(--ink);font-weight:700}
 .dish{border:1.5px solid var(--line);border-radius:6px;overflow:hidden}
 .dish-label{background:#fff1ec;color:#b33a2f;font-weight:900;font-size:12px;letter-spacing:.08em;padding:6px 10px}
 .dish-img{aspect-ratio:16/10;margin:10px;border-radius:6px;background:#fff;border:1.5px dashed var(--line);display:flex;align-items:center;justify-content:center;font-size:4rem;overflow:hidden}
@@ -462,7 +379,6 @@ textarea::placeholder{color:rgba(255,255,255,.4)}
 </style>
 </head>
 <body>
-<div id="pageBg" class="hidden"></div>
 <div id="fx" aria-hidden="true"></div>
 
 <!-- ===================== 1. トップ ===================== -->
@@ -470,13 +386,17 @@ textarea::placeholder{color:rgba(255,255,255,.4)}
   <div class="hero">
     <div class="hero-bg" id="heroBg" aria-hidden="true"><canvas id="heroTruck"></canvas></div>
     <div class="hero-top">
-      <div class="hero-badge h-in" style="--d:.2s"><span class="stamp-red">速達</span>速達生ビール</div>
+      <div class="hero-badge h-in" style="--d:.2s"><span class="stamp-red">奉納</span>速達生神社</div>
       <div class="logo-box h-in" style="--d:.3s" id="logoBox">LOGO</div>
     </div>
-    <p class="kicker h-in" style="--d:.4s">FRESH BEER OMIKUJI</p>
+    <div class="torii-crest h-in" style="--d:.35s">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2 5c4 1.2 16 1.2 20 0v2.5c-4 1-16 1-20 0V5zm3 4h14v2H5V9zm2 2h2.2v10H7V11zm7.8 0H17v10h-2.2V11zm-3.9-2h2.2v2h-2.2V9z"/></svg>
+      <span>速達生神社 御神籤</span>
+    </div>
+    <p class="kicker h-in" style="--d:.45s">FRESH BEER SHRINE OMIKUJI</p>
     <h1 class="hero-title h-in" style="--d:.6s"><span class="g">速達おみくじ便。</span></h1>
     <p class="shop-line h-in" style="--d:.8s" id="shopName"></p>
-    <p class="hero-lead h-in" style="--d:1s">アンケートに答えて、カメラをグラスへ。<br>速達トラックが走りまわり、グラスの泡から<br>今日のおみくじが、ふわっと届きます。</p>
+    <p class="hero-lead h-in" style="--d:1s">カメラをグラスにかざすと、テーブルに鳥居と神社が出現。<br>速達トラックが鳥居をくぐり、グラスの泡から<br>今日のご縁とおみくじが、ふわっと届きます。</p>
   </div>
   <div class="panel">
     <p class="sec-lab">SELECT SEASON<span>季節をえらぶ</span></p>
@@ -490,50 +410,27 @@ textarea::placeholder{color:rgba(255,255,255,.4)}
       </div>
       <div class="age-ng hidden" id="ageNg">ごめんなさい。このおみくじは20歳以上の方が対象です。</div>
     </div>
-    <button class="btn-main" id="startBtn" disabled>▶ アンケートに答えて出発！</button>
+    <button class="btn-main" id="startBtn" disabled>⛩️ 参拝してカメラをグラスへ！</button>
     <p class="legal">お酒は20歳になってから。飲酒運転は絶対にやめましょう。</p>
   </div>
 </section>
 
-<!-- ===================== 2. アンケート ===================== -->
-<section id="surveyScreen" class="screen">
-  <div class="qa">
-    <p class="qa-kicker">QUESTIONNAIRE</p>
-    <h2 class="qa-title">おみくじの前に、<br>ちょっとだけ教えてね</h2>
-    <div class="q">
-      <p class="q-lab"><span class="no">Q1</span>今日飲んだドリンクは？<span class="req">必須</span></p>
-      <div class="chips" id="q1"></div>
-    </div>
-    <div class="q">
-      <p class="q-lab"><span class="no">Q2</span>美味しさは？<span class="req">必須</span></p>
-      <div class="stars" id="q2"></div>
-      <div class="star-label" id="q2label"></div>
-    </div>
-    <div class="q">
-      <p class="q-lab"><span class="no">Q3</span>どこが良かった？<span class="opt">複数OK</span></p>
-      <div class="chips" id="q3"></div>
-    </div>
-    <p class="err" id="surveyErr"></p>
-    <button class="btn-main btn-red" id="submitBtn">送信して、カメラをグラスへ ›</button>
-    <p class="note">※お名前などの個人情報はいただきません。<br>おみくじを開けたら、最後に「ひと言」だけ教えてね。<br>このあと「カメラ」と「動きと方向」の許可をお願いします。</p>
-  </div>
-</section>
-
-<!-- ===================== 3. カメラ＋AR ===================== -->
+<!-- ===================== 2. カメラ＋AR ===================== -->
 <section id="arScreen" class="screen">
   <video id="cam" playsinline muted autoplay></video>
   <div id="tint"></div>
   <canvas id="gl"></canvas>
   <div class="ar-ui">
     <div class="finder hidden" id="finder"></div>
-    <div class="guide" id="guide">グラスをカメラに映してね</div>
+    <div class="guide" id="guide">⛩️ グラスをカメラに映して参拝してね</div>
+    <button class="sound-btn" id="soundBtn" type="button" aria-label="音声の切り替え">🔊</button>
     <div class="season-tag" id="seasonTag"><b></b><span></span></div>
     <div class="det-box hidden" id="detBox"><span id="detLabel"></span></div>
     <div id="foundLayer"></div>
-    <div class="tap-label hidden" id="tapLabel">タップして開けてね！</div>
+    <div class="tap-label hidden" id="tapLabel">⛩️ タップしておみくじを開く！</div>
     <div class="dir-hint hidden" id="dirHint"></div>
-    <div class="shake-ui hidden" id="shakeUI"><div class="mugs"><span>🍺</span><span>🍺</span></div><p>スマホを振って、乾杯！</p><div class="bar"><i id="shakeBar"></i></div><small id="shakeNote">乾杯パワーがたまると開くよ</small></div>
-    <button class="btn-main rescue hidden" id="rescueBtn">🚚 速達便を呼ぶ</button>
+    <button class="btn-main btn-red rescue hidden" id="drawBtn" type="button">⛩️ タップしておみくじを引く！</button>
+    <button class="btn-main rescue hidden" id="rescueBtn" type="button">⛩️ 速達生神社を呼び出す</button>
     <div class="status hidden" id="status"></div>
     <div class="loading hidden" id="loading"><div class="spinner"></div><div id="loadingText">準備中…</div></div>
   </div>
@@ -541,85 +438,213 @@ textarea::placeholder{color:rgba(255,255,255,.4)}
 <div id="flash"></div>
 <video id="omikujiVid" muted loop playsinline preload="auto" crossorigin="anonymous" style="position:fixed;width:1px;height:1px;opacity:0;pointer-events:none"></video>
 
-<!-- ===================== 4. 結果 ===================== -->
+<!-- ===================== 3. 結果 ===================== -->
 <section id="result">
   <div class="slip" id="slip">
-    <div class="slip-head"><h2>速達おみくじ便</h2><small id="rSeason"></small></div>
-    <div class="lockbox"><div class="lock-q">？？</div><p class="lock-note">ひと言アンケートに答えると、運勢が開きます</p></div>
-    <div class="rank-wrap rv d1"><div class="rank" id="rRank"></div><span class="stamp-red">速達</span></div>
+    <div class="slip-head">
+      <h2>
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2 5c4 1.2 16 1.2 20 0v2.5c-4 1-16 1-20 0V5zm3 4h14v2H5V9zm2 2h2.2v10H7V11zm7.8 0H17v10h-2.2V11zm-3.9-2h2.2v2h-2.2V9z"/></svg>
+        速達生神社 御神籤
+      </h2>
+      <small id="rSeason"></small>
+    </div>
+    <div class="lockbox"><div class="lock-q">？？</div><p class="lock-note">ひと言を奉納すると、今日の運勢が開きます</p></div>
+    <div class="rank-wrap rv d1">
+      <div class="rank-sub">本日のご運勢</div>
+      <div class="rank" id="rRank"></div>
+      <span class="stamp-red">奉納</span>
+    </div>
     <div class="msg rv d2" id="rMsg"></div>
+    <div class="omikuji-grid rv d2">
+      <div class="omikuji-item"><b>酒 運</b><span id="rSakeLuck"></span></div>
+      <div class="omikuji-item"><b>願 望</b><span id="rWish"></span></div>
+      <div class="omikuji-item"><b>開運の鍵</b><span id="rLucky"></span></div>
+    </div>
     <div class="dish rv d3">
-      <div class="dish-label">今日のおすすめ料理</div>
+      <div class="dish-label">⛩️ 神主おすすめの一品</div>
       <div class="dish-img" id="rDishImg"></div>
       <div class="dish-name" id="rDishName"></div>
       <div class="dish-desc" id="rDishDesc"></div>
     </div>
-    <div class="share rv d4">📸 スクショしてシェアしてね！</div>
+    <div class="share rv d4">📸 スクショしてご利益をシェア！</div>
   </div>
   <div class="comment-card" id="commentCard">
-    <p class="cc-title">運勢を開く前に、ひと言！</p>
+    <p class="cc-title">⛩️ 運勢を開く前に、ひと言奉納！</p>
     <p class="cc-sub">今日の一杯の感想を教えてね（タップで入力できます）</p>
     <div class="chips" id="quickChips"></div>
     <textarea id="q4" placeholder="例：泡がクリーミーで最高でした！"></textarea>
     <p class="err" id="commentErr"></p>
-    <button class="btn-main btn-red" id="commentBtn">送信して運勢を見る</button>
+    <button class="btn-main btn-red" id="commentBtn">奉納して運勢を開く</button>
   </div>
   <div class="result-actions">
-    <button class="btn-main btn-ghost" id="againBtn">もう一度見る</button>
+    <button class="btn-main btn-ghost" id="againBtn">もう一度おみくじを見る</button>
   </div>
   <p class="legal">お酒は20歳になってから。飲酒運転は絶対にやめましょう。</p>
 </section>
 
 <script type="module">
-/* =====================================================================
-   ここから下はプログラム本体です（通常は編集不要）
-   ===================================================================== */
 const C = window.APP_CONFIG;
 const $ = (s) => document.querySelector(s);
-// 古いiPhone（iOS15以前）向け：角丸の四角を描く関数がない場合の代わり
+
 if (!CanvasRenderingContext2D.prototype.roundRect) {
-  CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) { this.moveTo(x + r, y); this.arcTo(x + w, y, x + w, y + h, r); this.arcTo(x + w, y + h, x, y + h, r); this.arcTo(x, y + h, x, y, r); this.arcTo(x, y, x + w, y, r); this.closePath(); return this; };
+  CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+    this.moveTo(x + r, y); this.arcTo(x + w, y, x + w, y + h, r); this.arcTo(x + w, y + h, x, y + h, r);
+    this.arcTo(x, y + h, x, y, r); this.arcTo(x, y, x + w, y, r); this.closePath(); return this;
+  };
 }
 const TABLE_ID = new URLSearchParams(location.search).get('table') || '';
 
-// three.js は先読み（読めなかった場合もアンケート〜結果までは動く）
 let THREE = null;
 const threeReady = import(C.THREE_URL).then(m => (THREE = m)).catch(e => { console.warn('three.js 読み込み失敗', e); return null; });
 
 const SEASON_KEYS = ['haru', 'natsu', 'aki', 'fuyu'];
 const NOW_SEASON = (() => { const m = new Date().getMonth() + 1; return m >= 3 && m <= 5 ? 'haru' : m >= 6 && m <= 8 ? 'natsu' : m >= 9 && m <= 11 ? 'aki' : 'fuyu'; })();
-const sceneryUrl = (spot, k) => `${C.SCENERY.dir}${spot}_${k}.webp`;
-const slotUrl = (slot, k) => slot.img ? slot.img : sceneryUrl(slot.spot, k);
+const heroUrl = (k) => `${C.SCENERY.dir}${C.SCENERY.heroSpot}_${k}.webp`;
 
 const state = {
   ageOK: false,
   season: NOW_SEASON,
-  answers: { drink: '', rating: 0, points: [], comment: '' },
+  answers: { comment: '' },
   fortune: null,
   camOK: false,
-  mode: 'idle', // idle / searching / delivering / waitTap / opening / result
+  sent: false,
+  revealed: false,
+  mode: 'idle' // idle / searching / readyDraw / delivering / waitTap / opening / result
 };
+
+/* ---------------------------------------------------------------
+   神社らしい効果音（Web Audio API：外部音声ファイル不要）
+   --------------------------------------------------------------- */
+const SE = (() => {
+  let ctx = null, muted = false;
+  function ensure() {
+    if (muted) return null;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    if (!ctx) ctx = new AC();
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+    return ctx;
+  }
+  // 鈴の音（シャンシャン♪）：金属的な高倍音＋軽い揺らぎ
+  function bell() {
+    const c = ensure(); if (!c) return;
+    const now = c.currentTime;
+    [0, 0.14].forEach((offset, idx) => {
+      const t0 = now + offset;
+      const freqs = idx === 0 ? [2450, 3680, 4920, 6210] : [2620, 3920, 5240, 6580];
+      freqs.forEach((f, i) => {
+        const osc = c.createOscillator(), g = c.createGain();
+        osc.type = i % 2 ? 'triangle' : 'sine';
+        osc.frequency.setValueAtTime(f, t0);
+        osc.frequency.exponentialRampToValueAtTime(f * 0.992, t0 + 0.35);
+        const amp = 0.055 / (i + 1);
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.linearRampToValueAtTime(amp, t0 + 0.012);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.36);
+        osc.connect(g).connect(c.destination);
+        osc.start(t0); osc.stop(t0 + 0.38);
+      });
+    });
+  }
+  // 泡がグラスからふわっと上がる音（ポコン♪）
+  function bubbleUp() {
+    const c = ensure(); if (!c) return;
+    const t0 = c.currentTime + 0.08;
+    const osc = c.createOscillator(), g = c.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(280, t0);
+    osc.frequency.exponentialRampToValueAtTime(680, t0 + 0.16);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.linearRampToValueAtTime(0.14, t0 + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.22);
+    osc.connect(g).connect(c.destination);
+    osc.start(t0); osc.stop(t0 + 0.24);
+  }
+  // 泡が割れる音（パチン！）
+  function pop() {
+    const c = ensure(); if (!c) return;
+    const t0 = c.currentTime;
+    const osc = c.createOscillator(), g = c.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(520, t0);
+    osc.frequency.exponentialRampToValueAtTime(1450, t0 + 0.055);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.linearRampToValueAtTime(0.22, t0 + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.09);
+    osc.connect(g).connect(c.destination);
+    osc.start(t0); osc.stop(t0 + 0.1);
+    // 軽い弾けノイズ
+    const buf = c.createBuffer(1, Math.floor(c.sampleRate * 0.06), c.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (data.length * 0.25));
+    const src = c.createBufferSource(), flt = c.createBiquadFilter(), ng = c.createGain();
+    src.buffer = buf; flt.type = 'bandpass'; flt.frequency.value = 1800;
+    ng.gain.setValueAtTime(0.18, t0); ng.gain.exponentialRampToValueAtTime(0.001, t0 + 0.06);
+    src.connect(flt).connect(ng).connect(c.destination);
+    src.start(t0);
+  }
+  // 和太鼓（ドン！／大吉のときはドドン！＋きらめき和音）
+  function taiko(isDaikichi = false) {
+    const c = ensure(); if (!c) return;
+    const now = c.currentTime;
+    const hit = (t0, pitch, gainVal) => {
+      const osc = c.createOscillator(), g = c.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(pitch * 1.45, t0);
+      osc.frequency.exponentialRampToValueAtTime(pitch, t0 + 0.07);
+      osc.frequency.exponentialRampToValueAtTime(pitch * 0.65, t0 + 0.45);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.linearRampToValueAtTime(gainVal, t0 + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.5);
+      osc.connect(g).connect(c.destination);
+      osc.start(t0); osc.stop(t0 + 0.52);
+    };
+    if (isDaikichi) {
+      hit(now, 105, 0.26);
+      hit(now + 0.18, 86, 0.34);
+      // 大吉のきらめき和音（ヨナ抜き音階風）
+      [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
+        const t0 = now + 0.22 + i * 0.06;
+        const osc = c.createOscillator(), g = c.createGain();
+        osc.type = 'sine'; osc.frequency.setValueAtTime(f, t0);
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.linearRampToValueAtTime(0.07, t0 + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.7);
+        osc.connect(g).connect(c.destination);
+        osc.start(t0); osc.stop(t0 + 0.72);
+      });
+    } else {
+      hit(now, 92, 0.3);
+    }
+  }
+  function toggleMute() {
+    muted = !muted;
+    const btn = $('#soundBtn');
+    if (btn) { btn.textContent = muted ? '🔇' : '🔊'; btn.classList.toggle('muted', muted); }
+    if (!muted) bell();
+  }
+  return { unlock: ensure, bell, bubbleUp, pop, taiko, toggleMute };
+})();
+
+$('#soundBtn').onclick = (e) => { e.stopPropagation(); SE.toggleMute(); };
 
 function show(id) {
   document.querySelectorAll('.screen').forEach(el => el.classList.toggle('active', el.id === id));
-  $('#pageBg').classList.toggle('hidden', id !== 'surveyScreen');
   $('#fx').classList.toggle('hidden', id === 'arScreen');
 }
 
 /* ---------------------------------------------------------------
-   季節（トップ・アンケート・AR・結果にぜんぶ反映）
+   季節
    --------------------------------------------------------------- */
 function applySeason(k) {
   state.season = k;
   const S = C.SEASONS[k];
-  const front = sceneryUrl(C.SCENERY.slots[0].spot, k);
-  $('#heroBg').style.backgroundImage = `url("${front}")`;
-  $('#pageBg').style.backgroundImage = `url("${front}")`;
+  $('#heroBg').style.backgroundImage = `url("${heroUrl(k)}")`;
   $('#seasonMsg').textContent = S.msg;
   document.querySelectorAll('.season-card').forEach(b => b.classList.toggle('on', b.dataset.k === k));
-  // 舞うもの（花びら・泡・紅葉・雪）
+
   const fx = $('#fx'); fx.className = S.particle; fx.innerHTML = '';
-  for (let i = 0; i < 18; i++) {
+  for (let i = 0; i < 16; i++) {
     const p = document.createElement('i');
     p.style.left = Math.random() * 100 + '%';
     p.style.animationDuration = 7 + Math.random() * 7 + 's';
@@ -628,15 +653,13 @@ function applySeason(k) {
     p.style.scale = 0.7 + Math.random() * 0.7;
     fx.appendChild(p);
   }
-  // 景色画像を先読み
-  C.SCENERY.slots.forEach(s => { const im = new Image(); im.src = slotUrl(s, k); });
 }
 (function buildSeasonCards() {
   const row = $('#seasonRow');
   SEASON_KEYS.forEach(k => {
     const b = document.createElement('button');
     b.type = 'button'; b.className = 'season-card'; b.dataset.k = k;
-    b.style.backgroundImage = `url("${sceneryUrl(C.SCENERY.slots[0].spot, k)}")`;
+    b.style.backgroundImage = `url("${heroUrl(k)}")`;
     b.innerHTML = `<small>${C.SEASONS[k].en}</small><b>${C.SEASONS[k].jp}</b>${k === NOW_SEASON ? '<span class="now">いま</span>' : ''}`;
     b.onclick = () => applySeason(k);
     row.appendChild(b);
@@ -645,16 +668,19 @@ function applySeason(k) {
 applySeason(NOW_SEASON);
 
 /* ---- トップのトラック（右向きにして走らせる） ---- */
-function truckFacingRight(im) { // 左右反転し、荷台の広告だけ元の向きで貼りなおす（鏡文字にしない）
+function truckFacingRight(im) {
   const w = im.naturalWidth, h = im.naturalHeight, c = document.createElement('canvas'); c.width = w; c.height = h;
   const x = c.getContext('2d');
   x.save(); x.translate(w, 0); x.scale(-1, 1); x.drawImage(im, 0, 0); x.restore();
-  const a = 0.33, b = 0.945, t = 0.06, bt = 0.70; // 広告の範囲（元の絵での割合）
+  const a = 0.33, b = 0.945, t = 0.06, bt = 0.70;
   x.drawImage(im, w * a, h * t, w * (b - a), h * (bt - t), w * (1 - b), h * t, w * (b - a), h * (bt - t));
   return c;
 }
 const truckImg = new Image();
-const truckReady = new Promise(res => { truckImg.onload = () => res(true); truckImg.onerror = () => { console.warn('トラック画像を読み込めませんでした'); res(false); }; });
+const truckReady = new Promise(res => {
+  truckImg.onload = () => res(true);
+  truckImg.onerror = () => { console.warn('トラック画像を読み込めませんでした'); res(false); };
+});
 truckImg.src = C.DELIVERY.truckImage;
 truckReady.then(ok => {
   if (!ok) { $('#heroTruck').classList.add('hidden'); return; }
@@ -662,132 +688,46 @@ truckReady.then(ok => {
   cv.width = r.width; cv.height = r.height; cv.getContext('2d').drawImage(r, 0, 0);
 });
 
-
-/* =====================================================================
-   素材プレビュー：index.html?preview=izakaya のように開くと、その素材だけを回して見られます
-   （素材のデザインを確認・すり合わせする用。お客さんの画面には出ません）
-   ===================================================================== */
-const PREVIEW_ASSETS = { izakaya: () => makeIzakaya() };
-const PREVIEW = new URLSearchParams(location.search).get('preview');
-if (PREVIEW) threeReady.then(() => {
-  const make = PREVIEW_ASSETS[PREVIEW]; if (!make) { alert('プレビューできる素材: ' + Object.keys(PREVIEW_ASSETS).join(', ')); return; }
-  document.querySelectorAll('.screen,#fx,#pageBg').forEach(e => e.classList.add('hidden'));
-  const ar = $('#arScreen'); ar.classList.remove('hidden'); ar.classList.add('active', 'nocam'); video.classList.add('hidden');
-  $('.ar-ui').classList.add('hidden');
-  renderer = new THREE.WebGLRenderer({ canvas: $('#gl'), antialias: true });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.setSize(innerWidth, innerHeight, false);
-  scene = new THREE.Scene();
-  scene.background = canvasTex(4, 256, (x) => { const g = x.createLinearGradient(0, 0, 0, 256); g.addColorStop(0, '#1b2140'); g.addColorStop(1, '#3a2c30'); x.fillStyle = g; x.fillRect(0, 0, 4, 256); });
-  camera = new THREE.PerspectiveCamera(35, innerWidth / innerHeight, 0.005, 10);
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x8a6a4a, 1.7));
-  const sun = new THREE.DirectionalLight(0xffffff, 1.8); sun.position.set(0.6, 2, 1.2); scene.add(sun);
-  const table = new THREE.Mesh(new THREE.CircleGeometry(0.2, 48).rotateX(-Math.PI / 2), new THREE.MeshLambertMaterial({ map: woodTex('#8a5a34', '#6a4024', 'table') }));
-  scene.add(table);
-  const obj = make(); scene.add(obj); scene.add(makeShadow(new THREE.Vector3(), 0, 0.09, 0.07));
-  const box = new THREE.Box3().setFromObject(obj), size = box.getSize(new THREE.Vector3()).length();
-  let yaw = 0.5, pitch = 0.45, dist = size * 2.4, drag = null;
-  addEventListener('pointerdown', e => drag = { x: e.clientX, y: e.clientY, yaw, pitch });
-  addEventListener('pointermove', e => { if (!drag) return; yaw = drag.yaw - (e.clientX - drag.x) * 0.01; pitch = THREE.MathUtils.clamp(drag.pitch + (e.clientY - drag.y) * 0.01, 0.05, 1.4); });
-  addEventListener('pointerup', () => drag = null);
-  const t0 = performance.now();
-  (function frame(now) {
-    requestAnimationFrame(frame);
-    const t = (now - t0) / 1000; U.uTime.value = t;
-    if (!drag) yaw += 0.003;
-    const c = box.getCenter(new THREE.Vector3());
-    camera.position.set(c.x + Math.sin(yaw) * Math.cos(pitch) * dist, c.y + Math.sin(pitch) * dist, c.z + Math.cos(yaw) * Math.cos(pitch) * dist);
-    camera.lookAt(c);
-    if (obj.userData.tick) obj.userData.tick(t);
-    renderer.render(scene, camera);
-  })(t0);
-  window.__preview = { setView: (y, p, d) => { yaw = y; pitch = p; if (d) dist = size * d; } }; // スクリーンショット用
-});
-
 /* ---------------------------------------------------------------
-   1. トップ
+   1. トップ → 直接カメラ＋ARへ
    --------------------------------------------------------------- */
 $('#shopName').textContent = C.SHOP.name;
 if (C.SHOP.logoUrl) $('#logoBox').innerHTML = `<img src="${C.SHOP.logoUrl}" alt="">`;
-$('#ageYes').onclick = () => { state.ageOK = true; $('#ageYes').classList.add('on'); $('#ageNo').classList.remove('on'); $('#ageNg').classList.add('hidden'); $('#startBtn').disabled = false; };
-$('#ageNo').onclick  = () => { state.ageOK = false; $('#ageNo').classList.add('on'); $('#ageYes').classList.remove('on'); $('#ageNg').classList.remove('hidden'); $('#startBtn').disabled = true; };
-$('#startBtn').onclick = () => {
-  if (!state.ageOK) return;
-  show('surveyScreen');
-  $('#surveyScreen').scrollTop = 0;
-  preloadDetector(); // アンケート中にAIモデルを裏で読み込む
+
+$('#ageYes').onclick = () => {
+  state.ageOK = true;
+  $('#ageYes').classList.add('on'); $('#ageNo').classList.remove('on');
+  $('#ageNg').classList.add('hidden'); $('#startBtn').disabled = false;
+  preloadDetector(); // 年齢確認のタイミングでAIモデルを裏読み開始
+};
+$('#ageNo').onclick = () => {
+  state.ageOK = false;
+  $('#ageNo').classList.add('on'); $('#ageYes').classList.remove('on');
+  $('#ageNg').classList.remove('hidden'); $('#startBtn').disabled = true;
 };
 
-/* ---------------------------------------------------------------
-   2. アンケート
-   --------------------------------------------------------------- */
-function buildChips(el, items, multi, key) {
-  items.forEach(label => {
-    const b = document.createElement('button');
-    b.type = 'button'; b.className = 'chip'; b.textContent = label;
-    b.onclick = () => {
-      if (multi) {
-        const arr = state.answers[key];
-        const i = arr.indexOf(label);
-        i >= 0 ? arr.splice(i, 1) : arr.push(label);
-        b.classList.toggle('on', i < 0);
-      } else {
-        state.answers[key] = label;
-        el.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c === b));
-      }
-    };
-    el.appendChild(b);
-  });
-}
-buildChips($('#q1'), C.SURVEY.drinks, false, 'drink');
-buildChips($('#q3'), C.SURVEY.points, true, 'points');
-
-const STAR_TEXT = ['', 'いまいち', 'ふつう', 'おいしい', 'とてもおいしい', '最高！'];
-for (let i = 1; i <= 5; i++) {
-  const s = document.createElement('button');
-  s.type = 'button'; s.className = 'star'; s.textContent = '★'; s.setAttribute('aria-label', `${i}点`);
-  s.onclick = () => {
-    state.answers.rating = i;
-    $('#q2').querySelectorAll('.star').forEach((el, idx) => el.classList.toggle('on', idx < i));
-    $('#q2label').textContent = `${i}点：${STAR_TEXT[i]}`;
-  };
-  $('#q2').appendChild(s);
-}
-$('#q4').maxLength = C.SURVEY.commentMaxLength;
-
-$('#submitBtn').onclick = () => {
-  const a = state.answers;
-  if (!a.drink)  { $('#surveyErr').textContent = 'Q1 のドリンクを選んでね'; return; }
-  if (!a.rating) { $('#surveyErr').textContent = 'Q2 の★を選んでね'; return; }
-  $('#surveyErr').textContent = '';
-
-  // ★iOS対策：傾きセンサーとカメラの許可は「タップした瞬間」に要求する必要があるので、
-  //   await より前（このタップ処理の中）で呼び出しておく
+$('#startBtn').onclick = () => {
+  if (!state.ageOK) return;
+  // iOS対策：タップ直後に音声・センサー・カメラ許可と動画再生を開始
+  SE.unlock();
   const sensorP = requestOrientationPermission();
-  if (C.REVEAL.open === 'shake') requestMotionPermission();
   const camP = startCamera();
-
   state.fortune = drawFortune();
-  const v = $('#omikujiVid'); v.src = omikujiVideoUrl(); v.play().catch(() => {}); // iPhone はタップの瞬間に再生を始めておく
-  // ※アンケートの送信は、おみくじを開けたあとの「ひと言」と一緒に行います
+  const v = $('#omikujiVid'); v.src = omikujiVideoUrl(); v.play().catch(() => {});
   enterAR(camP, sensorP);
 };
 
 /* ---------------------------------------------------------------
-   アンケート送信（送信先は APP_CONFIG.SURVEY_SENDER.type で切り替え）
-   ・新しい送信先を足したいときは、この switch に case を追加するだけ
+   感想送信・運勢抽選
    --------------------------------------------------------------- */
-// ひと言の前にページを閉じられたときも、Q1〜Q3 だけは送っておく
-addEventListener('pagehide', () => { if (state.fortune && !state.sent && state.answers.drink) sendAnswers(); });
+addEventListener('pagehide', () => { if (state.fortune && !state.sent && state.answers.comment) sendAnswers(); });
 function sendAnswers() {
   if (state.sent) return;
   state.sent = true;
-  submitSurvey({ ...state.answers, fortune: state.fortune.rank, season: C.SEASONS[state.season].jp });
+  submitSurvey({ comment: state.answers.comment, fortune: state.fortune.rank, season: C.SEASONS[state.season].jp });
 }
 async function submitSurvey(answers) {
   const payload = {
-    drink: answers.drink,
-    rating: answers.rating,
-    points: answers.points.slice(),
     comment: answers.comment,
     fortune: answers.fortune,
     season: answers.season,
@@ -801,31 +741,26 @@ async function submitSurvey(answers) {
       case 'googleForm': {
         const e = S.googleForm.entries;
         const body = new URLSearchParams();
-        body.append(e.drink, payload.drink);
-        body.append(e.rating, String(payload.rating));
-        payload.points.forEach(p => body.append(e.points, p)); // チェックボックスは同じentryを複数回
-        body.append(e.comment, payload.comment);
+        if (e.comment) body.append(e.comment, payload.comment);
         if (e.season) body.append(e.season, payload.season);
         if (e.table) body.append(e.table, payload.table);
         await fetch(S.googleForm.actionUrl, { method: 'POST', mode: 'no-cors', body, keepalive: true });
         break;
       }
       case 'gas':
-        // text/plain にするとCORSのプリフライトが発生せずGASに送れる
         await fetch(S.gas.url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload), keepalive: true });
         break;
       case 'api':
         await fetch(S.api.url, { method: 'POST', headers: { 'Content-Type': 'application/json', ...S.api.headers }, body: JSON.stringify(payload), keepalive: true });
         break;
       default:
-        console.log('[アンケート回答（送信先未設定）]', payload);
+        console.log('[感想データ（送信先未設定）]', payload);
     }
   } catch (err) {
-    console.warn('アンケート送信に失敗しました', err); // 失敗してもおみくじは続行
+    console.warn('送信に失敗しました', err);
   }
 }
 
-/* 運勢を weight の比率で抽選 */
 function drawFortune() {
   const list = C.FORTUNES;
   const total = list.reduce((s, f) => s + Math.max(0, f.weight), 0);
@@ -835,20 +770,14 @@ function drawFortune() {
 }
 
 /* ---------------------------------------------------------------
-   センサー・カメラ
+   センサー・カメラ・グラス検出
    --------------------------------------------------------------- */
-function requestMotionPermission() { // 案D：振って開けるための加速度センサー
-  if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
-    return DeviceMotionEvent.requestPermission().then(r => r === 'granted').catch(() => false);
-  }
-  return Promise.resolve(true);
-}
 function requestOrientationPermission() {
   if (typeof DeviceOrientationEvent === 'undefined') return Promise.resolve(false);
-  if (typeof DeviceOrientationEvent.requestPermission === 'function') {  // iOS 13+
+  if (typeof DeviceOrientationEvent.requestPermission === 'function') {
     return DeviceOrientationEvent.requestPermission().then(r => r === 'granted').catch(() => false);
   }
-  return Promise.resolve(true); // Android は許可不要（実際にイベントが来るかは後で確認）
+  return Promise.resolve(true);
 }
 
 const video = $('#cam');
@@ -868,9 +797,6 @@ async function startCamera() {
   }
 }
 
-/* ---------------------------------------------------------------
-   グラス検出（MediaPipe Object Detector）
-   --------------------------------------------------------------- */
 let detectorPromise = null;
 function preloadDetector() {
   if (!C.DETECTION.enabled || detectorPromise) return detectorPromise;
@@ -889,7 +815,7 @@ function preloadDetector() {
 }
 let detector = null, lastDetectAt = 0, hitCount = 0, lastSeenAt = 0;
 
-function videoBoxToScreen(bb) { // 動画座標 → 画面座標（object-fit: cover の切り抜きを考慮）
+function videoBoxToScreen(bb) {
   const vw = video.videoWidth, vh = video.videoHeight, sw = innerWidth, sh = innerHeight;
   const s = Math.max(sw / vw, sh / vh), ox = (sw - vw * s) / 2, oy = (sh - vh * s) / 2;
   return { x: ox + bb.originX * s, y: oy + bb.originY * s, w: bb.width * s, h: bb.height * s };
@@ -901,28 +827,37 @@ function runDetection(now) {
   lastDetectAt = now;
   let res;
   try { res = detector.detectForVideo(video, now); } catch (e) { return; }
+
   let best = null;
+  const minH = innerHeight * (C.DETECTION.minBoxRatio || 0.08);
   for (const d of res.detections || []) {
     const c = d.categories[0];
-    if (c && C.DETECTION.labels.includes(c.categoryName) && (!best || c.score > best.score)) best = { ...c, box: d.boundingBox };
+    if (!c || !C.DETECTION.labels.includes(c.categoryName)) continue;
+    const r = videoBoxToScreen(d.boundingBox);
+    // 遠くの極小グラスやノイズを除外しつつ、確信度が高い候補を採用
+    if (r.h < minH) continue;
+    if (!best || c.score > best.score) best = { ...c, rect: r };
   }
+
   const box = $('#detBox');
   if (best) {
-    lastSeenAt = now; hitCount++;
-    const r = videoBoxToScreen(best.box);
+    lastSeenAt = now;
+    hitCount = Math.min(C.DETECTION.requiredHits, hitCount + 1);
+    const r = best.rect;
     Object.assign(box.style, { left: r.x + 'px', top: r.y + 'px', width: r.w + 'px', height: r.h + 'px' });
-    $('#detLabel').textContent = `🍺 グラス発見 ${Math.round(best.score * 100)}%`;
+    $('#detLabel').textContent = `🍺 グラス認識中 ${hitCount}/${C.DETECTION.requiredHits}（${Math.round(best.score * 100)}%）`;
     box.classList.remove('hidden');
     $('#finder').classList.add('hidden');
     if (hitCount >= C.DETECTION.requiredHits) onDrinkFound(r);
   } else {
-    hitCount = 0;
+    // 一瞬のブレで見失っても即ゼロに戻さず、1フレーム分の猶予を持たせる
+    if (now - lastSeenAt > C.DETECTION.intervalMs * 2) hitCount = Math.max(0, hitCount - 1);
     if (now - lastSeenAt > 600) { box.classList.add('hidden'); $('#finder').classList.remove('hidden'); }
   }
 }
 
 /* ---------------------------------------------------------------
-   3. AR画面の開始
+   2. AR画面の開始
    --------------------------------------------------------------- */
 let rescueTimer = null;
 async function enterAR(camP, sensorP) {
@@ -934,12 +869,11 @@ async function enterAR(camP, sensorP) {
   state.camOK = camOK;
   $('#arScreen').classList.toggle('nocam', !camOK);
   video.classList.toggle('hidden', !camOK);
-  // カメラ映像に季節の色をうっすら重ねる
   $('#tint').style.background = camOK ? S.tint : 'transparent';
   $('#tint').style.opacity = camOK ? S.tintOpacity : 0;
 
-  if (!THREE) { setLoading(null); showResult(); return; } // three.js が読めない環境 → 演出なしで結果へ
-  setLoading(`${S.jp}の景色を準備中…`);
+  if (!THREE) { setLoading(null); showResult(); return; }
+  setLoading(`${S.jp}の演出を準備中…`);
   await new Promise(r => setTimeout(r, 30));
   initThree();
   setupOrientation(sensorOK);
@@ -961,18 +895,18 @@ async function startSearching() {
   $('#rescueBtn').classList.add('hidden');
 
   if (!state.camOK) {
-    setGuide('速達おみくじ便へようこそ', 'カメラが使えないので3Dモードで遊べます');
+    setGuide('⛩️ 速達生神社へようこそ', 'カメラが使えないので3D参拝モードで遊べます');
     $('#rescueBtn').classList.remove('hidden');
     return;
   }
-  setGuide('グラスをカメラに映してね', '速達トラックがおみくじを届けにきます');
+  setGuide('⛩️ グラスをカメラに映して参拝してね', 'テーブルに鳥居と神社があらわれます');
   $('#finder').classList.remove('hidden');
   rescueTimer = setTimeout(() => { if (state.mode === 'searching') $('#rescueBtn').classList.remove('hidden'); }, C.DETECTION.rescueAfterMs);
 
   if (C.DETECTION.enabled) {
     setStatus('AIを準備中…');
     detector = await preloadDetector();
-    if (state.mode === 'searching') setStatus(detector ? 'グラスを探しています…' : 'AIが使えないため、ボタンで呼んでね');
+    if (state.mode === 'searching') setStatus(detector ? 'グラスを探しています…' : 'AIが使えないため、ボタンで呼び出してね');
     if (!detector) $('#rescueBtn').classList.remove('hidden');
   }
 }
@@ -987,7 +921,7 @@ function onDrinkFound(screenRect) {
   $('#finder').classList.add('hidden');
   setStatus('');
   if (screenRect) {
-    const f = document.createElement('div'); f.className = 'found'; f.textContent = 'お届け先、発見！';
+    const f = document.createElement('div'); f.className = 'found'; f.textContent = '⛩️ ご縁、発見！';
     $('#foundLayer').appendChild(f); setTimeout(() => f.remove(), 1300);
   }
   glassPos = glassWorldPosition(screenRect);
@@ -995,21 +929,38 @@ function onDrinkFound(screenRect) {
 }
 
 /* =====================================================================
-   three.js（景色・舞うもの・トラック・小包）
+   three.js（舞うもの・空中演出・卓上ジオラマ・泡のおみくじ・花火）
    ===================================================================== */
 let renderer, scene, camera, clock;
-let glassPos = null;           // グラス上端の3D位置
-let parcel = null;             // おみくじの入った小包
-let truck = null;              // グラスのまわりを走るトラック
+let glassPos = null;
+let bubbleObj = null;
+let truck = null, truck2 = null;
+let diorama = null;
 const fireworks = [];
-const FLOOR_Y = -1.25;         // 床の高さ（目の高さ=0 から下へ。座ってスマホを構えた想定）
-const U = { uTime: { value: 0 }, uScale: { value: 500 } }; // シェーダー共通の値
-let viewYaw = -Math.PI / 2;    // いま見ている水平方向（-π/2 = 最初の正面）
+const FLOOR_Y = -1.25;
+const U = { uTime: { value: 0 }, uScale: { value: 500 } };
+
+/* 演出用タイマーの一元管理（再演時の二重発火を防止） */
+const deliveryTimers = [];
+function scheduleDelivery(fn, ms) {
+  const id = setTimeout(() => {
+    const i = deliveryTimers.indexOf(id);
+    if (i >= 0) deliveryTimers.splice(i, 1);
+    fn();
+  }, ms);
+  deliveryTimers.push(id);
+  return id;
+}
+function clearDeliveryTimers() {
+  while (deliveryTimers.length) clearTimeout(deliveryTimers.pop());
+}
 
 function canvasTex(w, h, draw, srgb = true) {
   const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h);
   const t = new THREE.CanvasTexture(c); if (srgb) t.colorSpace = THREE.SRGBColorSpace; return t;
 }
+function lam(color, extra = {}) { return new THREE.MeshLambertMaterial({ color, ...extra }); }
+
 let _glowTex;
 function glowSprite(color, size, opacity = 1) {
   _glowTex = _glowTex || canvasTex(128, 128, (x) => {
@@ -1021,7 +972,6 @@ function glowSprite(color, size, opacity = 1) {
   s.scale.set(size, size, 1); return s;
 }
 
-/* ---- 光の粒のシェーダー（きらめき・花火で共用） ---- */
 const POINT_VS = `
   attribute vec3 color; attribute float size; attribute float phase;
   uniform float uTime; uniform float uScale; uniform float uTwinkle; uniform float uDrift;
@@ -1066,16 +1016,14 @@ function initThree() {
 
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(63, innerWidth / innerHeight, 0.02, 120);
-  camera.position.set(0, 0, 0); // 自分の目＝原点（1人称）
+  camera.position.set(0, 0, 0);
   clock = new THREE.Clock();
   updatePointScale();
 
-  // 小包を立体的に見せるライト
   scene.add(new THREE.HemisphereLight(0xffffff, 0x8a6a4a, 1.7));
   const sun = new THREE.DirectionalLight(0xffffff, 1.8); sun.position.set(0.6, 2, 1.2); scene.add(sun);
 
   if (!state.camOK) buildNoCamStage();
-  buildScenery();
   buildSeasonParticles();
   buildRoomMovers();
   buildFoamClouds();
@@ -1097,95 +1045,7 @@ function onResize() {
   updatePointScale();
 }
 
-/* ---- まわりに広がる季節の景色（名所の画像をぐるりと配置） ---- */
-function buildScenery() {
-  const SC = C.SCENERY;
-  if (SC.mode === 'none') return;
-  const slots = SC.mode === 'front' ? [{ ...SC.slots[0], width: 120 }] : SC.slots.map(s => ({ ...s, width: 360 / SC.slots.length + 14 }));
-  const R = 9; // 景色までの距離(m)
-  slots.forEach(slot => {
-    const img = new Image();
-    img.onload = () => {
-      const cw = Math.min(C.PERFORMANCE.sceneryWidth, img.naturalWidth), ch = Math.round(cw * img.naturalHeight / img.naturalWidth);
-      const c = document.createElement('canvas'); c.width = cw; c.height = ch;
-      const x = c.getContext('2d');
-      x.drawImage(img, 0, 0, cw, ch);
-      // フチをぼかして、となりの景色・カメラ映像となじませる
-      x.globalCompositeOperation = 'destination-in';
-      const edge = SC.mode === 'front' ? 0.16 : 0.07;
-      let g = x.createLinearGradient(0, 0, cw, 0);
-      g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(edge, '#000'); g.addColorStop(1 - edge, '#000'); g.addColorStop(1, 'rgba(0,0,0,0)');
-      x.fillStyle = g; x.fillRect(0, 0, cw, ch);
-      g = x.createLinearGradient(0, 0, 0, ch);
-      const roadTop = Math.max(0.5, slot.road - 0.12);
-      g.addColorStop(0, state.camOK ? 'rgba(0,0,0,0)' : '#000'); g.addColorStop(0.12, '#000');
-      g.addColorStop(roadTop, '#000'); g.addColorStop(Math.min(1, slot.road + 0.08), state.camOK ? 'rgba(0,0,0,0)' : 'rgba(0,0,0,.6)'); g.addColorStop(1, 'rgba(0,0,0,0)');
-      x.fillStyle = g; x.fillRect(0, 0, cw, ch);
-      const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
-      tex.wrapS = THREE.RepeatWrapping; tex.repeat.x = -1; tex.offset.x = 1; // 内側から見るので左右反転
-      const th = THREE.MathUtils.degToRad(slot.width);
-      const h = R * th * ch / cw;
-      const d = THREE.MathUtils.degToRad(slot.deg);
-      const mesh = new THREE.Mesh(new THREE.CylinderGeometry(R, R, h, 24, 1, true, Math.PI - d - th / 2, th),
-        new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: state.camOK ? SC.arOpacity : 1, depthWrite: false, side: THREE.BackSide, fog: false }));
-      mesh.position.y = FLOOR_Y + h * slot.road - h / 2; // 画像の道路を床の高さにそろえる
-      mesh.renderOrder = -2;
-      scene.add(mesh);
-    };
-    img.onerror = () => console.warn('景色の画像を読み込めませんでした', slotUrl(slot, state.season));
-    img.src = slotUrl(slot, state.season);
-    if (slot.sign) addRouteSign(slot.sign, slot.deg, R - 0.6);
-  });
-  if (SC.route && SC.mode === 'surround') buildRouteArrows(R - 0.5);
-}
-
-
-/* ---- 背景②：空に浮かぶ看板（出発・経由・到着） ---- */
-function addRouteSign(sign, deg, R) {
-  const text = sign.text.replace('{shop}', C.SHOP.name);
-  const style = { start: ['#13284f', '#ffc53d', 'START'], via: ['#1f7a4d', '#ffffff', 'VIA'], goal: ['#c62a24', '#ffffff', 'GOAL'] }[sign.type] || ['#1f7a4d', '#fff', ''];
-  const tex = canvasTex(640, 220, (x, w, h) => {
-    x.fillStyle = style[0]; x.strokeStyle = '#ffffff'; x.lineWidth = 10;
-    x.beginPath(); x.roundRect(8, 8, w - 16, h - 16, 26); x.fill(); x.stroke();
-    x.fillStyle = style[1]; x.textAlign = 'center'; x.textBaseline = 'middle';
-    x.font = '900 38px sans-serif'; x.fillText(style[2] + '  ▶ 速達生ルート', w / 2, 62);
-    x.font = '900 60px sans-serif';
-    let fs = 60; while (x.measureText(text).width > w - 60 && fs > 30) { fs -= 4; x.font = `900 ${fs}px sans-serif`; }
-    x.fillText(text, w / 2, 145);
-  });
-  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, fog: false }));
-  const d = THREE.MathUtils.degToRad(deg);
-  sp.position.set(Math.sin(d) * R, 0.75, -Math.cos(d) * R); // deg 0 = 最初の正面（-Z）
-  sp.scale.set(2.2, 0.76, 1);
-  sp.renderOrder = -1;
-  scene.add(sp);
-}
-
-/* ---- 背景②：道路の上を「出発 → 到着」へ流れる光の矢印 ---- */
-let routeTex = [];
-function buildRouteArrows(R) {
-  const make = () => {
-    const t = canvasTex(128, 32, (x, w, h) => {
-      x.shadowColor = 'rgba(255,200,80,1)'; x.shadowBlur = 8; x.strokeStyle = 'rgba(255,215,120,.95)'; x.lineWidth = 6; x.lineCap = 'round';
-      x.beginPath(); x.moveTo(40, 6); x.lineTo(70, 16); x.lineTo(40, 26); x.stroke();
-    });
-    t.wrapS = THREE.RepeatWrapping; t.repeat.set(Math.round(Math.PI * R / 0.9), 1);
-    return t;
-  };
-  [0, Math.PI].forEach((start, i) => {          // 右半分と左半分（どちらも うしろ→正面 に流れる）
-    const tex = make();
-    if (i === 1) tex.repeat.x *= -1;            // 左半分は矢印を逆向きに（正面のお店で合流する）
-    const mesh = new THREE.Mesh(new THREE.CylinderGeometry(R, R, 0.22, 48, 1, true, start, Math.PI),
-      new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, fog: false }));
-    mesh.position.y = FLOOR_Y + 0.16;
-    mesh.renderOrder = -1;
-    scene.add(mesh);
-    routeTex.push({ tex, dir: i === 0 ? -1 : 1 });
-  });
-}
-function updateRouteArrows(dt) { routeTex.forEach(r => { r.tex.offset.x += r.dir * dt * 1.2; }); }
-
-/* ---- 季節の舞うもの（花びら・泡・紅葉・雪） ---- */
+/* ---- 季節の舞うもの ---- */
 const SEASON_VS = `
   attribute float phase; attribute float size;
   uniform float uTime; uniform float uScale; uniform float uFall; uniform float uTop; uniform float uBottom; uniform float uSway;
@@ -1218,19 +1078,19 @@ const SEASON_FS = `
 function drawParticleTex(kind) {
   return canvasTex(64, 64, (x) => {
     x.translate(32, 32);
-    if (kind === 'petal') {        // 桜の花びら
+    if (kind === 'petal') {
       const g = x.createLinearGradient(-20, -20, 20, 20); g.addColorStop(0, '#fff0f5'); g.addColorStop(1, '#ff9cc2');
       x.fillStyle = g; x.beginPath(); x.moveTo(0, 22); x.bezierCurveTo(-24, 4, -14, -20, -3, -20); x.lineTo(0, -14); x.lineTo(3, -20); x.bezierCurveTo(14, -20, 24, 4, 0, 22); x.fill();
-    } else if (kind === 'leaf') {  // もみじ
+    } else if (kind === 'leaf') {
       x.fillStyle = Math.random() < 0.5 ? '#e5322d' : '#ff8a1f';
       x.beginPath();
       for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 9 : 26; x.lineTo(Math.cos(a) * r, Math.sin(a) * r); }
       x.closePath(); x.fill();
       x.strokeStyle = 'rgba(120,20,0,.5)'; x.lineWidth = 2; x.beginPath(); x.moveTo(0, 0); x.lineTo(0, 28); x.stroke();
-    } else if (kind === 'snow') {  // 雪
+    } else if (kind === 'snow') {
       const g = x.createRadialGradient(0, 0, 0, 0, 0, 28); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.5, 'rgba(255,255,255,.8)'); g.addColorStop(1, 'rgba(255,255,255,0)');
       x.fillStyle = g; x.beginPath(); x.arc(0, 0, 28, 0, 7); x.fill();
-    } else {                       // ビールの泡
+    } else {
       x.strokeStyle = 'rgba(255,224,138,.95)'; x.lineWidth = 4; x.beginPath(); x.arc(0, 0, 24, 0, 7); x.stroke();
       const g = x.createRadialGradient(-8, -8, 0, 0, 0, 24); g.addColorStop(0, 'rgba(255,255,255,.95)'); g.addColorStop(0.4, 'rgba(255,240,200,.25)'); g.addColorStop(1, 'rgba(255,197,61,.1)');
       x.fillStyle = g; x.beginPath(); x.arc(0, 0, 22, 0, 7); x.fill();
@@ -1262,7 +1122,7 @@ function buildSeasonParticles() {
   scene.add(pts);
 }
 
-/* ---- カメラなしモードの舞台（季節の空・床・お盆とジョッキ） ---- */
+/* ---- カメラなしモードの舞台 ---- */
 let stageGlass = null;
 function buildNoCamStage() {
   const sky = C.SEASONS[state.season].sky;
@@ -1277,14 +1137,10 @@ function buildNoCamStage() {
     x.fillStyle = g; x.fillRect(0, 0, 512, 512);
   });
   const floor = new THREE.Mesh(new THREE.CircleGeometry(12, 40).rotateX(-Math.PI / 2), new THREE.MeshLambertMaterial({ map: floorTex, transparent: true }));
-  floor.position.y = FLOOR_Y - 0.01; floor.renderOrder = -10; scene.add(floor); // 先に描いて、上に立つ画像素材を隠さないように
-  const tray = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.04, 32), new THREE.MeshLambertMaterial({ color: 0x6a4428 }));
-  tray.position.set(0, -0.47, -0.7); if (!(C.DIORAMA && C.DIORAMA.enabled)) scene.add(tray); // ジオラマがあるときはお盆の代わりにジオラマ
+  floor.position.y = FLOOR_Y - 0.01; floor.renderOrder = -10; scene.add(floor);
   const g = new THREE.Group();
-  const beer = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.038, 0.13, 20), new THREE.MeshLambertMaterial({ color: 0xf2a51e, emissive: 0x5a3000 }));
-  beer.position.y = 0.065; g.add(beer);
-  const foam = new THREE.Mesh(new THREE.CylinderGeometry(0.044, 0.042, 0.03, 20), new THREE.MeshLambertMaterial({ color: 0xfff8e8 }));
-  foam.position.y = 0.145; g.add(foam);
+  const beer = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.038, 0.13, 20), lam(0xf2a51e, { emissive: 0x5a3000 })); beer.position.y = 0.065; g.add(beer);
+  const foamTop = new THREE.Mesh(new THREE.CylinderGeometry(0.044, 0.042, 0.03, 20), lam(0xfff8e8)); foamTop.position.y = 0.145; g.add(foamTop);
   const shell = new THREE.Mesh(new THREE.CylinderGeometry(0.047, 0.043, 0.17, 20, 1, true), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.18, side: THREE.DoubleSide, depthWrite: false }));
   shell.position.y = 0.085; g.add(shell);
   const handle = new THREE.Mesh(new THREE.TorusGeometry(0.035, 0.008, 6, 12, Math.PI), shell.material); handle.rotation.z = -Math.PI / 2; handle.position.set(0.047, 0.085, 0); g.add(handle);
@@ -1292,139 +1148,22 @@ function buildNoCamStage() {
   stageGlass = new THREE.Vector3(0, -0.45 + C.DETECTION.glassHeightM, -0.7);
 }
 
-/* ---------------------------------------------------------------
-   4. 演出：速達トラックがグラスのまわりを走り、目の前で停車して小包を届ける
-   --------------------------------------------------------------- */
-// 画面上のグラスの位置と大きさから、3D空間でのグラス上端の位置を推定
-function glassWorldPosition(rect) {
-  if (!state.camOK) return stageGlass.clone();
-  const fovV = THREE.MathUtils.degToRad(camera.fov);
-  let sx = innerWidth / 2, sy = innerHeight * 0.6, dist = 0.6;
-  if (rect) {
-    sx = rect.x + rect.w / 2; sy = rect.y + rect.h * 0.1;
-    const frac = Math.max(0.05, rect.h / innerHeight);
-    dist = THREE.MathUtils.clamp(C.DETECTION.glassHeightM / (2 * Math.tan(fovV / 2) * frac), 0.25, 1.4);
-  }
-  const ndc = new THREE.Vector2((sx / innerWidth) * 2 - 1, -(sy / innerHeight) * 2 + 1);
-  const ray = new THREE.Raycaster(); ray.setFromCamera(ndc, camera);
-  return ray.ray.at(dist, new THREE.Vector3());
-}
-
-/* トラック：画像を立てて置き、画面上の進む向きで絵を左右切り替え */
-function createTruck(center) {
-  const D = C.DELIVERY;
-  const texL = new THREE.Texture(truckImg); texL.colorSpace = THREE.SRGBColorSpace; texL.needsUpdate = true;
-  const texR = new THREE.CanvasTexture(truckFacingRight(truckImg)); texR.colorSpace = THREE.SRGBColorSpace;
-  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texL, transparent: true, depthWrite: false }));
-  sprite.center.set(0.5, 0.02);
-  const DI = C.DIORAMA && C.DIORAMA.enabled ? C.DIORAMA : null;
-  const L = DI ? DI.truckLength : D.length, H = L * truckImg.naturalHeight / truckImg.naturalWidth;
-  sprite.scale.set(L, H, 1);
-  const shadowTex = canvasTex(64, 64, (x) => { const g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, 'rgba(0,0,0,.55)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64); });
-  const shadow = new THREE.Mesh(new THREE.PlaneGeometry(L * 1.15, L * 0.45).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false }));
-  const light = glowSprite(0xffe7a0, L * 0.9, 0.7);
-  scene.add(shadow, sprite, light);
-  const toCam = Math.atan2(-center.z, -center.x);                  // グラスから見た「お客さん側」の角度
-  return { sprite, shadow, light, texL, texR, L, H, center, a: toCam + Math.PI, facing: 'L', t: 0, target: null, stopT: 0, onArrive: null,
-    radius: DI ? DI.roadRadius : D.radius, speed: DI ? DI.speed : D.speed };
-}
-
-function startDelivery() {
-  clearParcel();
-  state.mode = 'delivering';
-  const tableY = glassPos.y - C.DETECTION.glassHeightM;            // グラスの底＝テーブルの高さ（推定）
-  const center = new THREE.Vector3(glassPos.x, tableY, glassPos.z);
-  truckReady.then(ok => {
-    if (state.mode !== 'delivering') return;
-    if (!ok) { C.REVEAL.style === 'bubble' ? startFoam(glassPos.clone()) : launchParcel(glassPos.clone()); return; } // 画像が無いときはグラスから直接
-    if (C.DIORAMA && C.DIORAMA.enabled) { startDioramaDelivery(center); return; }
-    if (!truck) truck = createTruck(center);
-    if (C.REVEAL.style === 'bubble') {                             // 案B：トラックは走り続け、グラスの泡からカプセルが出る
-      setGuide('🚚 速達トラックがやってきた！', 'グラスをよく見ててね…');
-      setTimeout(() => { if (state.mode === 'delivering') startFoam(glassPos.clone()); }, 2200);
-      return;
-    }
-    // 何周か走ってから、お客さん側（グラスの手前）で停車する
-    const D = C.DELIVERY, stopA = Math.atan2(-center.z, -center.x);
-    const minTravel = Math.PI * 0.9 + D.laps * Math.PI * 2;
-    const k = Math.floor((truck.a - minTravel - stopA) / (Math.PI * 2));
-    truck.target = stopA + k * Math.PI * 2;
-    truck.onArrive = () => {
-      setGuide('📦 速達便が到着！', 'おみくじの小包を受け取ってね');
-      if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
-      const bed = truck.sprite.position.clone().add(new THREE.Vector3(0, truck.H * 0.75, 0));
-      setTimeout(() => launchParcel(bed), 350);
-    };
-    setGuide('🚚 速達トラックがやってきた！', 'グラスのまわりを走っているよ');
-  });
-}
-
-const _tt = {};
-function updateTruck(dt) { updateTruckOne(truck, dt); updateTruckOne(truck2, dt); }
-function updateTruckOne(tr, dt) {
-  if (!tr) return;
-  if (!_tt.v) { _tt.v = new THREE.Vector3(); _tt.p = new THREE.Vector3(); _tt.r = new THREE.Vector3(); }
-  const D = C.DELIVERY;
-  tr.t += dt;
-  let moving = true;
-  if (tr.stopT > 0) { tr.stopT -= dt; moving = false; }
-  else {
-    let step = tr.speed * dt / (diorama && diorama.L ? 1 : tr.radius);   // ジオラマでは道のり(m)で進む
-    if (tr.target != null) {                                       // 停車位置が近づいたら減速
-      const rem = tr.a - tr.target;
-      step = Math.min(rem, step * THREE.MathUtils.clamp(rem / (diorama && diorama.L ? 0.09 : 0.9), 0.12, 1));
-      if (rem <= 0.0005) { tr.target = null; tr.stopT = 2.2; moving = false; const cb = tr.onArrive; tr.onArrive = null; cb && cb(); step = 0; }
-    }
-    tr.a -= step * (tr.dir || 1);                                  // dir=-1 は反対まわり（反対車線）
-  }
-  const yOff = diorama ? diorama.H : 0;                            // ジオラマの台の上を走る
-  const bump = moving ? Math.abs(Math.sin(tr.t * 22)) * 0.0012 : 0;
-  const p = diorama && diorama.L
-    ? _tt.p.copy(diorama.pathWorld(tr.a, tr.off || 0)).setY(tr.center.y + yOff + bump)          // 陸上トラック形の道路を走る
-    : _tt.p.set(tr.center.x + Math.cos(tr.a) * tr.radius, tr.center.y + yOff + bump, tr.center.z + Math.sin(tr.a) * tr.radius);
-  const before = _tt.v.copy(tr.sprite.position).project(camera).x, after = p.clone().project(camera).x;
-  if (Math.abs(after - before) > 0.0008) {                          // 画面上で右へ進むなら右向きの絵
-    const want = after > before ? 'R' : 'L';
-    if (want !== tr.facing) { tr.facing = want; tr.sprite.material.map = want === 'R' ? tr.texR : tr.texL; tr.sprite.material.needsUpdate = true; }
-  }
-  tr.sprite.position.copy(p);
-  tr.shadow.position.set(p.x, tr.center.y + yOff + 0.0015, p.z);
-  const right = _tt.r.set(1, 0, 0).applyQuaternion(camera.quaternion);
-  tr.shadow.rotation.y = Math.atan2(-right.z, right.x);
-  tr.light.position.copy(p).addScaledVector(right, (tr.facing === 'R' ? 1 : -1) * tr.L * 0.5).add(new THREE.Vector3(0, tr.H * 0.3, 0));
-  // グラスの向こう側を通るときは、本物のグラスに隠れるように消す
-  const dT = Math.hypot(p.x, p.z), dG = Math.hypot(tr.center.x, tr.center.z);
-  let ang = Math.atan2(p.z, p.x) - Math.atan2(tr.center.z, tr.center.x);
-  ang = Math.atan2(Math.sin(ang), Math.cos(ang));
-  const cover = (0.045 + tr.L * 0.45) / Math.max(0.1, dG);
-  const hidden = dT > dG ? THREE.MathUtils.clamp((cover - Math.abs(ang)) / (cover * 0.35), 0, 1) : 0;
-  tr.sprite.material.opacity = 1 - hidden;
-  tr.light.material.opacity = 0.7 * (1 - hidden);
-  tr.shadow.material.opacity = 1 - hidden * 0.6;
-}
-
-
-
-
-/* ---- 背景のビール泡雲：店内の上のほうに、白い泡の雲がもくもく浮かぶ ---- */
-let foamClouds = [];
+/* ---- 背景のビール泡雲（スッキリ4個） ---- */
+const foamClouds = [];
 function makeFoamCloudTex(seed) {
   const rnd = (() => { let t = seed * 9301 + 49297; return () => ((t = (t * 9301 + 49297) % 233280) / 233280); })();
   return canvasTex(512, 320, (x, w, h) => {
     const puffs = [];
-    for (let i = 0; i < 26; i++) { const px = w * (0.15 + rnd() * 0.7), r = h * (0.12 + rnd() * 0.16); puffs.push([px, h * 0.72 - r * (0.3 + rnd() * 1.1) * (1 - Math.abs(px / w - 0.5) * 1.2), r]); }
-    puffs.forEach(([px, py, r]) => {                                       // もこもこの泡のかたまり
+    for (let i = 0; i < 24; i++) {
+      const px = w * (0.15 + rnd() * 0.7), r = h * (0.12 + rnd() * 0.16);
+      puffs.push([px, h * 0.72 - r * (0.3 + rnd() * 1.1) * (1 - Math.abs(px / w - 0.5) * 1.2), r]);
+    }
+    puffs.forEach(([px, py, r]) => {
       const g = x.createRadialGradient(px - r * 0.3, py - r * 0.35, r * 0.1, px, py, r);
       g.addColorStop(0, 'rgba(255,253,246,1)'); g.addColorStop(0.7, 'rgba(250,240,220,1)'); g.addColorStop(0.92, 'rgba(225,205,170,.9)'); g.addColorStop(1, 'rgba(225,205,170,0)');
       x.fillStyle = g; x.beginPath(); x.arc(px, py, r, 0, 7); x.fill();
     });
-    for (let i = 0; i < 160; i++) {                                         // 泡のつぶつぶ
-      const px = w * (0.15 + rnd() * 0.7), py = h * (0.15 + rnd() * 0.6), r = 2 + rnd() * 6;
-      const d = x.getImageData(px | 0, py | 0, 1, 1).data; if (d[3] < 200) continue;
-      x.strokeStyle = 'rgba(200,175,130,.45)'; x.lineWidth = 1.2; x.beginPath(); x.arc(px, py, r, 0, 7); x.stroke();
-      x.fillStyle = 'rgba(255,255,255,.9)'; x.beginPath(); x.arc(px - r * 0.3, py - r * 0.3, r * 0.3, 0, 7); x.fill();
-    }
-    const fade = x.createLinearGradient(0, h * 0.62, 0, h * 0.82);         // 下側はビール色にうすく溶ける
+    const fade = x.createLinearGradient(0, h * 0.62, 0, h * 0.82);
     fade.addColorStop(0, 'rgba(255,200,80,0)'); fade.addColorStop(1, 'rgba(255,190,60,.35)');
     x.globalCompositeOperation = 'source-atop'; x.fillStyle = fade; x.fillRect(0, 0, w, h); x.globalCompositeOperation = 'source-over';
   });
@@ -1432,10 +1171,10 @@ function makeFoamCloudTex(seed) {
 function buildFoamClouds() {
   const n = (C.ROOM && C.ROOM.foamClouds) || 0;
   for (let i = 0; i < n; i++) {
-    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: makeFoamCloudTex(i + 3), transparent: true, depthWrite: false, opacity: 0.92, fog: false }));
-    const a = -Math.PI / 2 + Math.PI * 2 * i / n + 0.2, r = 5.5 + (i % 3) * 0.8, s = 2.2 + (i % 3) * 0.7;
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: makeFoamCloudTex(i + 3), transparent: true, depthWrite: false, opacity: 0.88, fog: false }));
+    const a = -Math.PI / 2 + Math.PI * 2 * i / n + 0.25, r = 5.6 + (i % 2) * 0.8, s = 2.1 + (i % 2) * 0.6;
     sp.scale.set(s * 1.6, s, 1); sp.renderOrder = -3;
-    sp.userData = { a, r, y: 1.7 + (i % 2) * 0.5, s, ph: i * 1.7, sp: 0.006 + (i % 3) * 0.003 };
+    sp.userData = { a, r, y: 1.75 + (i % 2) * 0.45, s, ph: i * 1.7, sp: 0.006 + (i % 2) * 0.003 };
     scene.add(sp); foamClouds.push(sp);
   }
 }
@@ -1443,400 +1182,143 @@ function updateFoamClouds(time, dt) {
   foamClouds.forEach(c => {
     const u = c.userData; u.a += u.sp * dt;
     c.position.set(Math.cos(u.a) * u.r, u.y + Math.sin(time * 0.25 + u.ph) * 0.12, Math.sin(u.a) * u.r);
-    const b = 1 + Math.sin(time * 0.6 + u.ph) * 0.04;                       // もくもく、ゆっくりふくらむ
+    const b = 1 + Math.sin(time * 0.6 + u.ph) * 0.04;
     c.scale.set(u.s * 1.6 * b, u.s * (2 - b), 1);
   });
 }
 
-/* =====================================================================
-   お店の中を360°動きまわる演出（飛行船・ジョッキの気球）
-   ===================================================================== */
+/* ---- 店内の空中演出（飛行船＋気球3個にスッキリ整理） ---- */
 const roomMovers = [];
 function buildRoomMovers() {
   const RM = C.ROOM; if (!RM) return;
-  if (RM.blimp && RM.blimpImage) {                                 // 飛行船（画像版）：文字と旗を描き足す
+
+  if (RM.blimp && RM.blimpImage) {
     const img = new Image();
     const sp = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, alphaTest: 0.05, depthWrite: false })); sp.visible = false;
     img.onload = () => {
-      const make = (mirror) => {                                   // mirror=true は右向き（文字は鏡にしない）
-        const k = 1024 / img.width, bw = img.width * k, bh = img.height * k;
-        const banner = !!RM.bannerText;
-        const gap = banner ? bw * 0.1 : 0, fw = banner ? bw * 0.75 : 0, fh = bh * 0.34, W = bw + gap + fw, H = bh;
-        return canvasTex(Math.round(W), Math.round(H), (x) => {
-          const bx = mirror ? W - bw : 0, flip = (px) => mirror ? W - px : px;
-          x.save(); if (mirror) { x.translate(W, 0); x.scale(-1, 1); } x.drawImage(img, 0, 0, bw, bh); x.restore();
-          x.fillStyle = '#d4231c'; x.font = `900 ${Math.round(bh * 0.24)}px "Dela Gothic One", sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle';
-          x.shadowColor = 'rgba(255,255,255,.6)'; x.shadowBlur = 6;
-          if (RM.blimpText) x.fillText(RM.blimpText, flip(bw * 0.22), bh * 0.42);
-          x.shadowBlur = 0;
-          if (!banner) return;
-          const ry = bh * 0.5, r0 = flip(bw * 0.97), r1 = mirror ? fw : bw + gap;            // ロープ
-          x.strokeStyle = '#6a6a6a'; x.lineWidth = 4; x.beginPath(); x.moveTo(r0, ry); x.lineTo(r1, ry); x.stroke();
-          const fx = mirror ? 0 : bw + gap, fy = ry - fh / 2;                                  // 旗
-          x.fillStyle = '#fffaf0'; x.strokeStyle = '#e5322d'; x.lineWidth = 6;
-          x.beginPath(); x.moveTo(fx, fy);
-          for (let i = 0; i <= 20; i++) x.lineTo(fx + fw * i / 20, fy + Math.sin(i * 0.9) * fh * 0.06);
-          for (let i = 20; i >= 0; i--) x.lineTo(fx + fw * i / 20, fy + fh + Math.sin(i * 0.9) * fh * 0.06);
-          x.closePath(); x.fill(); x.stroke();
-          x.fillStyle = '#e5322d'; let fs = fh * 0.62; x.font = `900 ${fs}px sans-serif`;
-          while (x.measureText(RM.bannerText).width > fw * 0.9 && fs > 10) { fs -= 2; x.font = `900 ${fs}px sans-serif`; }
-          x.fillText(RM.bannerText, fx + fw / 2, ry + 2);
+      const make = (mirror) => {
+        const k = 1024 / img.width, bw = Math.round(img.width * k), bh = Math.round(img.height * k);
+        return canvasTex(bw, bh, (x) => {
+          x.save(); if (mirror) { x.translate(bw, 0); x.scale(-1, 1); } x.drawImage(img, 0, 0, bw, bh); x.restore();
         });
       };
       sp.userData.texL = make(false); sp.userData.texR = make(true);
       sp.material.map = sp.userData.texL; sp.material.needsUpdate = true;
-      const H = RM.bannerText ? 0.7 : 0.85, img2 = sp.userData.texL.image; sp.scale.set(H * img2.width / img2.height, H, 1); sp.visible = true; // 飛行船の高さ(m)（大きく）
+      const H = 0.8, im = sp.userData.texL.image;
+      sp.scale.set(H * im.width / im.height, H, 1); sp.visible = true;
     };
-    img.onerror = () => console.warn('素材の画像を読み込めませんでした', RM.blimpImage);
     img.src = C.SCENERY.dir + RM.blimpImage;
-    sp.userData = { ...sp.userData, kind: 'blimpImg', r: 2.8, a: -Math.PI / 2 + 0.25, y: 0.45, facing: 'L' };
-    scene.add(sp); roomMovers.push(sp);
-  } else if (RM.blimp) {
-    const b = new THREE.Group();
-    const body = new THREE.Mesh(new THREE.SphereGeometry(0.22, 28, 16), lam(0xffc53d, { emissive: 0x4a2a00 })); body.scale.set(2.4, 1, 1); b.add(body);
-    const band = new THREE.Mesh(new THREE.CylinderGeometry(0.205, 0.205, 0.07, 28, 1, true), lam(0xe5322d, { side: THREE.DoubleSide })); band.rotation.z = Math.PI / 2; band.scale.set(1, 1, 1); b.add(band);
-    const txt = labelTex(RM.blimpText, 512, 160, 'rgba(0,0,0,0)', '#e5322d', '900 120px sans-serif');
-    [1, -1].forEach(s => { const t = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.19), new THREE.MeshBasicMaterial({ map: txt, transparent: true, side: THREE.DoubleSide }));
-      t.position.set(0.02, 0.07, s * 0.205); if (s < 0) t.rotation.y = Math.PI; b.add(t); });
-    const fin = lam(0xe5322d);
-    [[0, 1], [0, -1], [1, 0], [-1, 0]].forEach(([y, z]) => { const f = new THREE.Mesh(new THREE.BoxGeometry(0.16, y ? 0.14 : 0.01, z ? 0.14 : 0.01), fin); f.position.set(-0.48, y * 0.08, z * 0.08); b.add(f); });
-    const gondola = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.05, 0.07), lam(0xffffff)); gondola.position.set(0.05, -0.23, 0); b.add(gondola);
-    const winG = new THREE.Mesh(new THREE.PlaneGeometry(0.12, 0.02), new THREE.MeshBasicMaterial({ color: 0x6fd6ff })); winG.position.set(0.05, -0.225, 0.036); b.add(winG);
-    // ひっぱる旗
-    const flag = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.16, 12, 1), new THREE.MeshBasicMaterial({ map: labelTex(RM.bannerText, 512, 104, '#fffaf0', '#e5322d', '900 64px sans-serif'), side: THREE.DoubleSide }));
-    flag.position.set(-1.05, -0.05, 0); b.add(flag);
-    const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.003, 0.003, 0.18, 4), lam(0x666666)); rope.rotation.z = Math.PI / 2; rope.position.set(-0.6, -0.03, 0); b.add(rope);
-    b.userData = { kind: 'blimp', r: 2.4, a: -Math.PI / 2 + 0.25, y: 0.6, flag, base: flag.geometry.attributes.position.array.slice() };
-    scene.add(b); roomMovers.push(b);
-  }
-  // 画像素材を板にして浮かべる（いつもこちらを向く）
-  const imgSprite = (file, h, onload) => {
-    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, alphaTest: 0.05, depthWrite: false })); sp.visible = false;
-    new THREE.TextureLoader().load(C.SCENERY.dir + file, t => {
-      t.colorSpace = THREE.SRGBColorSpace; sp.material.map = t; sp.material.needsUpdate = true;
-      sp.scale.set(h * t.image.width / t.image.height, h, 1); sp.userData.baseScale = sp.scale.clone(); sp.visible = true;
-      if (onload) onload(t);
-    }, undefined, () => console.warn('素材の画像を読み込めませんでした', file));
-    return sp;
-  };
-  const around = (i, n, off) => -Math.PI / 2 + Math.PI * 2 * (i + 0.5) / n + off;
-  for (let i = 0; i < (RM.birds || 0) && RM.birdImage; i++) {      // 鶴：店内を大きく旋回して飛ぶ
-    const sp = imgSprite(RM.birdImage, 0.32, t => { const f = t.clone(); f.repeat.x = -1; f.offset.x = 1; f.needsUpdate = true; sp.userData.texL = t; sp.userData.texR = f; });
-    sp.userData = { kind: 'bird', a: around(i, RM.birds, 1.1), r: 2.0 + (i % 2) * 0.8, y: 0.45 + (i % 3) * 0.25, sp: (i % 2 ? 1 : -1) * 0.16, ph: i * 1.3, facing: 'L' };
+    sp.userData = { kind: 'blimpImg', r: 2.9, a: -Math.PI / 2 + 0.25, y: 0.5, facing: 'L' };
     scene.add(sp); roomMovers.push(sp);
   }
-  for (let i = 0; i < (RM.bottles || 0) && RM.bottleImage; i++) {  // 一升瓶：ふわふわ浮かぶ
-    const sp = imgSprite(RM.bottleImage, 0.45);
-    sp.userData = { kind: 'bottle', a: around(i, RM.bottles, 0.75), r: 2.2 + (i % 2) * 0.6, y: -0.25 + (i % 2) * 0.4, sp: 0.012, ph: i * 2.1 };
-    scene.add(sp); roomMovers.push(sp);
-  }
-  if (RM.planet && RM.planetImage) {                               // ビールの惑星：高いところでゆっくり回る
-    const sp = imgSprite(RM.planetImage, 1.9);                    // 惑星（大きく）
-    const gl = glowSprite(0xffc040, 4.4, 0.35);
-    sp.userData = { kind: 'planet', a: -Math.PI / 2 - 0.6, r: 4.6, y: 1.35, glow: gl };
-    scene.add(gl, sp); roomMovers.push(sp);
-  }
-  if (RM.balloonImage) {                                           // ジョッキの気球（画像版）
+
+  if (RM.balloonImage) {
     for (let i = 0; i < (RM.balloons || 0); i++) {
-      const sp = imgSprite(RM.balloonImage, 0.85 + (i % 3) * 0.12); // 気球（大きく）
-      const a = around(i, RM.balloons, 0.35), r = 2.6 + (i % 3) * 0.5;
-      sp.userData = { kind: 'balloonImg', a, r, y: -0.15 + (i % 3) * 0.3, ph: Math.random() * 6, sp: (i % 2 ? 1 : -1) * 0.02 };
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, alphaTest: 0.05, depthWrite: false })); sp.visible = false;
+      const h = 0.8 + (i % 3) * 0.1;
+      new THREE.TextureLoader().load(C.SCENERY.dir + RM.balloonImage, t => {
+        t.colorSpace = THREE.SRGBColorSpace; sp.material.map = t; sp.material.needsUpdate = true;
+        sp.scale.set(h * t.image.width / t.image.height, h, 1); sp.visible = true;
+      }, undefined, () => console.warn('素材の画像を読み込めませんでした', RM.balloonImage));
+      const a = -Math.PI / 2 + Math.PI * 2 * (i + 0.5) / RM.balloons + 0.35, r = 2.6 + (i % 3) * 0.5;
+      sp.userData = { kind: 'balloonImg', a, r, y: -0.1 + (i % 3) * 0.28, ph: Math.random() * 6, sp: (i % 2 ? 1 : -1) * 0.02 };
       sp.position.set(Math.cos(a) * r, sp.userData.y, Math.sin(a) * r);
       scene.add(sp); roomMovers.push(sp);
     }
   }
-  for (let i = 0; i < (RM.balloonImage ? 0 : RM.balloons || 0); i++) {   // ジョッキの気球（図形の仮素材）
-    const g = new THREE.Group();
-    const s = 0.8 + Math.random() * 0.4;
-    const mug = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.12, 0.34, 18), lam(0xf2a51e, { emissive: 0x5a3000 })); g.add(mug);
-    [[0, 0.2, 0, 0.1], [0.08, 0.18, 0.04, 0.075], [-0.08, 0.18, -0.03, 0.08], [0.02, 0.19, -0.08, 0.07], [-0.03, 0.19, 0.08, 0.07]].forEach(([x, y, z, r]) => {
-      const f = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 8), lam(0xfffaf0, { emissive: 0x332a1a })); f.position.set(x, y, z); g.add(f); });
-    const handle = new THREE.Mesh(new THREE.TorusGeometry(0.08, 0.02, 6, 14, Math.PI), lam(0xfff3d0)); handle.rotation.z = -Math.PI / 2; handle.position.x = 0.14; g.add(handle);
-    [-1, 1].forEach(sx => [-1, 1].forEach(sz => { const r = new THREE.Mesh(new THREE.CylinderGeometry(0.003, 0.003, 0.2, 4), lam(0x8a6a4a)); r.position.set(sx * 0.07, -0.27, sz * 0.07); g.add(r); }));
-    const basket = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.07, 0.12), lam(0x9a6a3a)); basket.position.y = -0.4; g.add(basket);
-    const glow = glowSprite(0xffc060, 0.9, 0.35); g.add(glow);
-    g.scale.setScalar(s);
-    const a = -Math.PI / 2 + Math.PI * 2 * (i + 0.5) / RM.balloons + 0.35, r = 2.6 + (i % 3) * 0.5;
-    g.userData = { kind: 'balloon', a, r, y: -0.15 + (i % 3) * 0.3, ph: Math.random() * 6, sp: (i % 2 ? 1 : -1) * 0.02 };
-    g.position.set(Math.cos(a) * r, g.userData.y, Math.sin(a) * r);
-    scene.add(g); roomMovers.push(g);
-  }
 }
+
 let _rv = null;
 function updateRoomMovers(dt, time) {
   _rv = _rv || new THREE.Vector3();
   roomMovers.forEach(m => {
     const u = m.userData;
-    if (u.kind === 'blimp') {
-      u.a += dt * 0.07;                                            // ゆっくり店内を一周（約90秒）
-      m.position.set(Math.cos(u.a) * u.r, u.y + Math.sin(time * 0.6) * 0.05, Math.sin(u.a) * u.r);
-      m.rotation.set(0, -u.a - Math.PI / 2, Math.sin(time * 0.6) * 0.04); // 進む方向を向く（横腹の「速達生」がこちらに見える）
-      const pa = u.flag.geometry.attributes.position;               // 旗をなびかせる
-      for (let i = 0; i < pa.count; i++) { const x0 = u.base[i * 3]; pa.setZ(i, Math.sin(time * 5 + x0 * 7) * 0.04 * (0.4 - x0)); }
-      pa.needsUpdate = true;
-    } else if (u.kind === 'blimpImg') {
+    if (u.kind === 'blimpImg') {
       const before = _rv.copy(m.position).project(camera).x;
-      u.a += dt * 0.07;                                            // ゆっくり店内を一周（約90秒）
+      u.a += dt * 0.07;
       m.position.set(Math.cos(u.a) * u.r, u.y + Math.sin(time * 0.6) * 0.05, Math.sin(u.a) * u.r);
       const after = _rv.copy(m.position).project(camera).x;
-      const want = after > before ? 'R' : 'L';                     // 画面上の進む向きで、機首の向きを切り替え
-      if (u.texL && want !== u.facing && Math.abs(after - before) > 0.0003) { u.facing = want; m.material.map = want === 'R' ? u.texR : u.texL; m.material.needsUpdate = true; }
-      m.material.rotation = Math.sin(time * 0.6) * 0.03;
-    } else if (u.kind === 'bird') {
-      const before = _rv.copy(m.position).project(camera).x;
-      u.a += u.sp * dt;
-      m.position.set(Math.cos(u.a) * u.r, u.y + Math.sin(time * 1.4 + u.ph) * 0.08, Math.sin(u.a) * u.r);
-      const after = _rv.copy(m.position).project(camera).x;          // 画面上の進む向きに合わせて絵を左右反転（絵は左向き）
       const want = after > before ? 'R' : 'L';
-      if (u.texL && want !== u.facing && Math.abs(after - before) > 0.0005) { u.facing = want; m.material.map = want === 'R' ? u.texR : u.texL; m.material.needsUpdate = true; }
-      if (m.userData.baseScale) { const f = 1 + Math.sin(time * 6 + u.ph) * 0.12; m.scale.set(m.userData.baseScale.x, m.userData.baseScale.y * f, 1); } // はばたき
-      m.material.rotation = Math.sin(time * 1.4 + u.ph) * 0.08;
-    } else if (u.kind === 'bottle') {
-      u.a += u.sp * dt;
-      m.position.set(Math.cos(u.a) * u.r, u.y + Math.sin(time * 0.8 + u.ph) * 0.12, Math.sin(u.a) * u.r);
-      m.material.rotation = Math.sin(time * 0.6 + u.ph) * 0.25;       // ゆらゆら傾く
-    } else if (u.kind === 'planet') {
-      u.a += dt * 0.01;
-      m.position.set(Math.cos(u.a) * u.r, u.y + Math.sin(time * 0.3) * 0.08, Math.sin(u.a) * u.r);
-      u.glow.position.copy(m.position); u.glow.material.opacity = 0.3 + Math.sin(time * 1.2) * 0.08;
-      m.material.rotation = Math.sin(time * 0.2) * 0.15;
-    } else {
+      if (u.texL && want !== u.facing && Math.abs(after - before) > 0.0003) {
+        u.facing = want; m.material.map = want === 'R' ? u.texR : u.texL; m.material.needsUpdate = true;
+      }
+      m.material.rotation = Math.sin(time * 0.6) * 0.03;
+    } else if (u.kind === 'balloonImg') {
       u.a += u.sp * dt;
       m.position.set(Math.cos(u.a) * u.r, u.y + Math.sin(time * 0.5 + u.ph) * 0.18, Math.sin(u.a) * u.r);
-      if (u.kind === 'balloonImg') m.material.rotation = Math.sin(time * 0.7 + u.ph) * 0.06;
-      else { m.rotation.y = time * 0.15 + u.ph; m.rotation.z = Math.sin(time * 0.7 + u.ph) * 0.06; }
+      m.material.rotation = Math.sin(time * 0.7 + u.ph) * 0.06;
     }
   });
 }
 
-/* =====================================================================
-   卓上ジオラマ（卓上A）：物流センター → 道路 → お店。トラックが樽を運び続ける
-   ===================================================================== */
-let diorama = null;
-let truck2 = null;                     // 反対車線を走る2台目
-function lam(color, extra = {}) { return new THREE.MeshLambertMaterial({ color, ...extra }); }
-function labelTex(text, w, h, bg, fg, font) {
-  return canvasTex(w, h, (x) => {
-    x.fillStyle = bg; x.fillRect(0, 0, w, h);
-    x.fillStyle = fg; x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = font;
-    let fs = parseInt(font.match(/(\d+)px/)[1]);
-    while (x.measureText(text).width > w * 0.92 && fs > 8) { fs -= 2; x.font = font.replace(/\d+px/, fs + 'px'); }
-    x.fillText(text, w / 2, h / 2 + 2);
-  });
-}
-function makeWarehouse() {             // 物流センター（白い倉庫＋ひさし＋搬入口）
+/* ---- 卓上ジオラマ（画像素材ベース） ---- */
+function makeAssetSprite(file, height) {
   const g = new THREE.Group();
-  const body = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.038, 0.05), lam(0xf3f5f7)); body.position.y = 0.019; g.add(body);
-  const roof = new THREE.Mesh(new THREE.BoxGeometry(0.079, 0.004, 0.054), lam(0xb9c0ca)); roof.position.y = 0.04; g.add(roof);
-  const band = new THREE.Mesh(new THREE.BoxGeometry(0.0755, 0.004, 0.0505), lam(0x2a5fb0)); band.position.y = 0.032; g.add(band);
-  const canopy = new THREE.Mesh(new THREE.BoxGeometry(0.056, 0.0025, 0.02), lam(0x7d848f)); canopy.position.set(-0.006, 0.022, 0.034); g.add(canopy);
-  for (let i = 0; i < 3; i++) { const door = new THREE.Mesh(new THREE.PlaneGeometry(0.012, 0.015), lam(0x3a3f48)); door.position.set(-0.024 + i * 0.016, 0.008, 0.0252); g.add(door); }
-  const sign = new THREE.Mesh(new THREE.PlaneGeometry(0.05, 0.011), new THREE.MeshBasicMaterial({ map: labelTex(C.DIORAMA.warehouseName + ' 物流センター', 256, 56, '#ffffff', '#e5322d', '900 30px sans-serif') }));
-  sign.position.set(0, 0.03, 0.0258); g.add(sign);
-  g.userData.door = new THREE.Vector3(-0.008, 0.01, 0.04);
+  g.userData.door = new THREE.Vector3(0, height * 0.15, 0.012);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, alphaTest: 0.08 }));
+  sp.center.set(0.5, 0); sp.scale.set(height, height, 1); sp.visible = false; g.add(sp);
+  new THREE.TextureLoader().load(C.SCENERY.dir + file, (t) => {
+    t.colorSpace = THREE.SRGBColorSpace; sp.material.map = t; sp.material.needsUpdate = true; sp.visible = true;
+    sp.scale.set(height * t.image.width / t.image.height, height, 1);
+  }, undefined, () => console.warn('素材の画像を読み込めませんでした', file));
   return g;
 }
-/* ===== ASSET: izakaya ===== ① お店（和の居酒屋）
-   町家風の2階建て：瓦屋根・格子・のれん（ゆれる）・赤ちょうちん・立て看板・ビールケース
-   大きさは 1 = 間口の幅 で作り、最後に縮小してテーブルに置きます */
-const _wtex = {};
-function woodTex(base = '#5a3a22', dark = '#3a2414', key = 'w') {
-  return _wtex[key] || (_wtex[key] = canvasTex(256, 256, (x, w, h) => {
-    x.fillStyle = base; x.fillRect(0, 0, w, h);
-    for (let i = 0; i < 70; i++) {                                // 木目
-      const y0 = Math.random() * h; x.strokeStyle = `rgba(${Math.random() < 0.5 ? '0,0,0' : '255,220,170'},${0.05 + Math.random() * 0.08})`;
-      x.lineWidth = 1 + Math.random() * 2; x.beginPath(); x.moveTo(0, y0);
-      for (let k = 0; k <= w; k += 16) x.lineTo(k, y0 + Math.sin(k * 0.03 + i) * 3);
-      x.stroke();
-    }
-    x.fillStyle = dark; for (let k = 0; k < w; k += 32) x.fillRect(k, 0, 2, h);     // 板の継ぎ目
-  }));
-}
-function tileTex() {                                              // 瓦（いぶし銀）
-  return _wtex.tile || (_wtex.tile = (() => {
-    const t = canvasTex(256, 256, (x, w, h) => {
-      x.fillStyle = '#4e5560'; x.fillRect(0, 0, w, h);
-      for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
-        const cx = c * 32 + 16, cy = r * 32;
-        const g = x.createLinearGradient(cx - 16, 0, cx + 16, 0);
-        g.addColorStop(0, '#3a4049'); g.addColorStop(0.5, '#7a828e'); g.addColorStop(1, '#3a4049');
-        x.fillStyle = g; x.fillRect(cx - 15, cy, 30, 30);
-        x.fillStyle = 'rgba(0,0,0,.45)'; x.fillRect(cx - 16, cy + 28, 32, 4);   // 段の影
-      }
-    });
-    t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
-  })());
-}
-function plasterTex() {                                           // しっくい壁
-  return _wtex.pl || (_wtex.pl = canvasTex(128, 128, (x, w, h) => {
-    x.fillStyle = '#efe8d8'; x.fillRect(0, 0, w, h);
-    for (let i = 0; i < 900; i++) { x.fillStyle = `rgba(120,100,70,${Math.random() * 0.06})`; x.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
-  }));
-}
-function lanternTex(ch) {                                         // 赤ちょうちん（文字入り）
-  return canvasTex(256, 128, (x, w, h) => {
-    const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#b3161c'); g.addColorStop(0.5, '#ff4a32'); g.addColorStop(1, '#b3161c');
-    x.fillStyle = g; x.fillRect(0, 0, w, h);
-    x.fillStyle = 'rgba(0,0,0,.18)'; for (let y = 6; y < h; y += 11) x.fillRect(0, y, w, 2);    // 竹ひご
-    x.fillStyle = '#1a0a06'; x.font = '900 70px serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
-    x.fillText(ch, w * 0.25, h / 2 + 4); x.fillText(ch, w * 0.75, h / 2 + 4);
-  });
-}
-function makeIzakaya(opt = {}) {
-  const o = Object.assign({ name: C.SHOP.name, noren: ['速', '達', '生'], norenColor: '#1d2a5a', lanterns: ['生', '酒'] }, opt);
-  const root = new THREE.Group(), g = new THREE.Group(); root.add(g);
-  const W = 1, D = 0.72, H1 = 0.44, H2 = 0.3;
-  const woodM = new THREE.MeshLambertMaterial({ map: woodTex() });
-  const darkWood = new THREE.MeshLambertMaterial({ color: 0x2e1d12 });
-  const stoneM = new THREE.MeshLambertMaterial({ color: 0x8e8a82 });
-  const tileM = new THREE.MeshLambertMaterial({ map: tileTex(), side: THREE.DoubleSide });
-  const plasterM = new THREE.MeshLambertMaterial({ map: plasterTex() });
-  const add = (geo, mat, x, y, z) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); g.add(m); return m; };
 
-  // 基礎と1階
-  add(new THREE.BoxGeometry(W + 0.04, 0.035, D + 0.04), stoneM, 0, 0.0175, 0);
-  add(new THREE.BoxGeometry(W, H1, D), woodM, 0, 0.035 + H1 / 2, 0);
-  // 1階の正面：格子・明かりのもれる入口（夜の店先なので自ら光る絵にする）
-  const front = canvasTex(512, 256, (x, w, h) => {
-    x.fillStyle = '#3a2414'; x.fillRect(0, 0, w, h);
-    const glow = x.createLinearGradient(0, 0, 0, h); glow.addColorStop(0, '#ffd88f'); glow.addColorStop(1, '#ff9f45');
-    [[16, 40, 170, 190], [200, 30, 112, 226], [328, 40, 168, 190]].forEach(([x0, y0, ww, hh], i) => {
-      x.fillStyle = glow; x.fillRect(x0, y0, ww, hh);
-      if (i === 1) {                                            // 入口：障子の引き戸
-        x.strokeStyle = '#5a3a22'; x.lineWidth = 5; x.strokeRect(x0, y0, ww, hh);
-        x.lineWidth = 2; for (let k = 1; k < 4; k++) { x.beginPath(); x.moveTo(x0 + ww * k / 4, y0); x.lineTo(x0 + ww * k / 4, y0 + hh); x.stroke(); }
-        for (let k = 1; k < 6; k++) { x.beginPath(); x.moveTo(x0, y0 + hh * k / 6); x.lineTo(x0 + ww, y0 + hh * k / 6); x.stroke(); }
-      } else {                                                  // 千本格子
-        x.fillStyle = '#2a180c'; for (let k = x0; k < x0 + ww; k += 9) x.fillRect(k, y0, 5, hh);
-        x.fillRect(x0, y0 + hh * 0.5, ww, 4);
-      }
-    });
-    x.fillStyle = '#2a180c'; x.fillRect(0, 0, w, 14); x.fillRect(0, h - 10, w, 10);
-  });
-  const facade = add(new THREE.PlaneGeometry(W * 0.98, H1 * 0.92), new THREE.MeshBasicMaterial({ map: front }), 0, 0.035 + H1 * 0.48, D / 2 + 0.002);
-  const lightIn = glowSprite(0xffb35a, 1.1, 0.35); lightIn.position.set(0, 0.25, D / 2 + 0.05); g.add(lightIn);
-  // 店先の地面にもれる明かり
-  const pool = add(new THREE.CircleGeometry(0.42, 32).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: canvasTex(128, 128, (x) => {
-    const gr = x.createRadialGradient(64, 64, 0, 64, 64, 64); gr.addColorStop(0, 'rgba(255,190,110,.55)'); gr.addColorStop(1, 'rgba(255,190,110,0)'); x.fillStyle = gr; x.fillRect(0, 0, 128, 128);
-  }), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }), 0, 0.002, D / 2 + 0.12);
-  pool.scale.set(1.3, 1, 0.7);
-  // 柱
-  [-W / 2, -0.2, 0.2, W / 2].forEach(xp => add(new THREE.BoxGeometry(0.04, H1, 0.04), darkWood, xp, 0.035 + H1 / 2, D / 2));
-
-  // 1階の庇（瓦）
-  const eaveY = 0.035 + H1;
-  const eave = add(new THREE.PlaneGeometry(W + 0.14, 0.26), tileM, 0, eaveY + 0.05, D / 2 + 0.1);
-  eave.rotation.x = -Math.PI / 2 + 0.42; tileM.map.repeat.set(4, 1);
-  add(new THREE.BoxGeometry(W + 0.16, 0.025, 0.03), darkWood, 0, eaveY - 0.005, D / 2 + 0.215);  // 軒先の鼻隠し
-
-  // 2階：しっくい壁＋柱＋虫籠窓
-  const y2 = eaveY + 0.05;
-  add(new THREE.BoxGeometry(W - 0.06, H2, D - 0.1), plasterM, 0, y2 + H2 / 2, -0.02);
-  [-(W - 0.06) / 2, 0, (W - 0.06) / 2].forEach(xp => add(new THREE.BoxGeometry(0.035, H2, 0.035), darkWood, xp, y2 + H2 / 2, (D - 0.1) / 2 - 0.02));
-  add(new THREE.BoxGeometry(W - 0.04, 0.03, 0.035), darkWood, 0, y2 + H2 - 0.015, (D - 0.1) / 2 - 0.02);
-  const mushiko = canvasTex(256, 64, (x, w, h) => {
-    x.fillStyle = '#ffcf86'; x.fillRect(0, 0, w, h);
-    x.fillStyle = '#efe8d8'; for (let k = 0; k < w; k += 18) x.fillRect(k, 0, 9, h);   // しっくいの縦格子
-  });
-  [-0.24, 0.24].forEach(xp => add(new THREE.PlaneGeometry(0.3, 0.09), new THREE.MeshBasicMaterial({ map: mushiko }), xp, y2 + 0.12, (D - 0.1) / 2 - 0.018));
-
-  // 看板（2階の正面）
-  const sign = add(new THREE.PlaneGeometry(0.46, 0.1), new THREE.MeshBasicMaterial({ map: canvasTex(512, 112, (x, w, h) => {
-    x.fillStyle = '#2a180c'; x.fillRect(0, 0, w, h); x.strokeStyle = '#c9a14a'; x.lineWidth = 6; x.strokeRect(6, 6, w - 12, h - 12);
-    x.fillStyle = '#f3d38a'; x.font = '900 64px serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
-    let fs = 64; while (x.measureText(o.name).width > w - 50 && fs > 24) { fs -= 4; x.font = `900 ${fs}px serif`; }
-    x.fillText(o.name, w / 2, h / 2 + 3);
-  }) }), 0, y2 + 0.24, (D - 0.1) / 2 - 0.0);
-
-  // 大屋根（切妻・瓦）
-  const ry = y2 + H2, rise = 0.17, half = D / 2 + 0.08, slope = Math.hypot(half, rise), ang = Math.atan2(rise, half);
-  const roofTile = tileTex().clone(); roofTile.needsUpdate = true; roofTile.repeat.set(5, 2);
-  const roofM = new THREE.MeshLambertMaterial({ map: roofTile, side: THREE.DoubleSide });
-  [1, -1].forEach(s => {
-    const r = add(new THREE.PlaneGeometry(W + 0.16, slope), roofM, 0, ry + rise / 2, s * half / 2 - 0.02);
-    r.rotation.x = -s * (Math.PI / 2 - ang);
-  });
-  const gableShape = new THREE.Shape(); gableShape.moveTo(-(D - 0.1) / 2, 0); gableShape.lineTo((D - 0.1) / 2, 0); gableShape.lineTo(0, rise * 0.9); gableShape.closePath();
-  [-1, 1].forEach(s => { const gm = add(new THREE.ShapeGeometry(gableShape), plasterM, s * (W - 0.06) / 2, ry, -0.02); gm.rotation.y = s * Math.PI / 2; });
-  add(new THREE.BoxGeometry(W + 0.2, 0.035, 0.05), new THREE.MeshLambertMaterial({ color: 0x3a3f48 }), 0, ry + rise + 0.005, -0.02);  // 棟
-  [-1, 1].forEach(s => add(new THREE.BoxGeometry(0.06, 0.07, 0.06), new THREE.MeshLambertMaterial({ color: 0x3a3f48 }), s * (W / 2 + 0.09), ry + rise + 0.02, -0.02)); // 鬼瓦
-
-  // のれん（ゆれる）
-  const noren = [];
-  const nw = 0.1, nh = 0.14, ny = 0.035 + H1 - 0.085;
-  o.noren.forEach((ch, i) => {
-    const tex = canvasTex(64, 96, (x, w, h) => {
-      x.fillStyle = o.norenColor; x.fillRect(0, 0, w, h);
-      x.fillStyle = '#ffffff'; x.font = '900 40px serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(ch, w / 2, h * 0.58);
-      x.fillStyle = 'rgba(0,0,0,.25)'; x.fillRect(0, 0, w, 6);
-    });
-    const geo = new THREE.PlaneGeometry(nw, nh, 1, 6); geo.translate(0, -nh / 2, 0);
-    const m = add(geo, new THREE.MeshLambertMaterial({ map: tex, side: THREE.DoubleSide }), (i - (o.noren.length - 1) / 2) * (nw + 0.006), ny, D / 2 + 0.03);
-    m.userData.base = geo.attributes.position.array.slice(); m.userData.ph = i * 0.8; noren.push(m);
-  });
-  add(new THREE.CylinderGeometry(0.006, 0.006, nw * 3.4, 6), darkWood, 0, ny + 0.004, D / 2 + 0.03).rotation.z = Math.PI / 2;
-
-  // 赤ちょうちん（ゆれる）
-  const lanterns = [];
-  const prof = []; for (let i = 0; i <= 10; i++) { const t = i / 10 * 2 - 1; prof.push(new THREE.Vector2(0.018 + 0.05 * Math.sqrt(1 - t * t * 0.9), t * 0.075)); }
-  o.lanterns.forEach((ch, i) => {
-    const pivot = new THREE.Group(); pivot.position.set((i ? 1 : -1) * 0.38, eaveY - 0.01, D / 2 + 0.12); g.add(pivot);
-    const body = new THREE.Mesh(new THREE.LatheGeometry(prof, 16), new THREE.MeshBasicMaterial({ map: lanternTex(ch) })); body.position.y = -0.1; pivot.add(body);
-    [0.075, -0.075].forEach(yy => { const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.024, 0.014, 12), darkWood); cap.position.y = -0.1 + yy; pivot.add(cap); });
-    const gl = glowSprite(0xff5a32, 0.32, 0.6); gl.position.y = -0.1; pivot.add(gl);
-    pivot.userData.ph = i * 1.7; lanterns.push(pivot);
-  });
-
-  // 店先の小物：立て看板・ビールケース・樽・鉢植え
-  const board = add(new THREE.PlaneGeometry(0.11, 0.17), new THREE.MeshBasicMaterial({ map: canvasTex(128, 196, (x, w, h) => {
-    x.fillStyle = '#2a180c'; x.fillRect(0, 0, w, h); x.fillStyle = '#1e2a22'; x.fillRect(8, 8, w - 16, h - 16);
-    x.fillStyle = '#fff'; x.font = '900 26px sans-serif'; x.textAlign = 'center';
-    x.fillText('本日の', w / 2, 44); x.fillStyle = '#ffd23a'; x.font = '900 34px sans-serif'; x.fillText('生ビール', w / 2, 92);
-    x.fillStyle = '#ff8a6a'; x.font = '900 22px sans-serif'; x.fillText('速達便で', w / 2, 132); x.fillText('入荷！', w / 2, 160);
-  }), side: THREE.DoubleSide }), 0.3, 0.12, D / 2 + 0.2);
-  board.rotation.x = -0.18;
-  const crateM = new THREE.MeshLambertMaterial({ color: 0xf2b21c });
-  [[0, 0], [0, 1], [1, 0]].forEach(([c, r]) => add(new THREE.BoxGeometry(0.1, 0.06, 0.08), crateM, -0.42 + c * 0.105, 0.065 + r * 0.062, D / 2 + 0.12));
-  const keg = add(new THREE.CylinderGeometry(0.045, 0.045, 0.1, 14), new THREE.MeshLambertMaterial({ color: 0xc9ced4 }), -0.18, 0.085, D / 2 + 0.16);
-  add(new THREE.CylinderGeometry(0.048, 0.048, 0.012, 14), new THREE.MeshLambertMaterial({ color: 0x7a808a }), -0.18, 0.11, D / 2 + 0.16);
-  add(new THREE.CylinderGeometry(0.04, 0.03, 0.06, 10), new THREE.MeshLambertMaterial({ color: 0x6a4a32 }), 0.46, 0.065, D / 2 + 0.1);
-  add(new THREE.IcosahedronGeometry(0.06, 0), new THREE.MeshLambertMaterial({ color: 0x3f8a4a, flatShading: true }), 0.46, 0.14, D / 2 + 0.1);
-
-  // うごき：のれんが風にゆれ、ちょうちんがゆらゆら
-  root.userData.tick = (t) => {
-    noren.forEach(m => {
-      const pa = m.geometry.attributes.position, b = m.userData.base;
-      for (let i = 0; i < pa.count; i++) { const yy = b[i * 3 + 1]; pa.setZ(i, b[i * 3 + 2] + Math.sin(t * 2.2 + m.userData.ph + yy * 12) * 0.012 * (-yy / nh)); }
-      pa.needsUpdate = true;
-    });
-    lanterns.forEach(p => { p.rotation.z = Math.sin(t * 1.3 + p.userData.ph) * 0.06; p.rotation.x = Math.cos(t * 1.1 + p.userData.ph) * 0.04; });
-  };
-  root.scale.setScalar(0.068);   // テーブルに置く大きさ（間口 約7cm）
-  root.userData.door = new THREE.Vector3(0, 0.1, D / 2 + 0.2).multiplyScalar(0.068); // 樽を届ける位置
-  return root;
-}
-/* ===== /ASSET: izakaya ===== */
-
-function makeShop() { return makeIzakaya(); }   // 配達先のお店＝① 和の居酒屋
-function makeShopSimple() {            // （旧）簡易版の居酒屋
+/* 道路をまたぐ立体の大鳥居（扁額の神社名＋御神灯付き） */
+function makeTorii(W = 0.078, H = 0.1, title = '') {
   const g = new THREE.Group();
-  const body = new THREE.Mesh(new THREE.BoxGeometry(0.058, 0.032, 0.044), lam(0x6a4426)); body.position.y = 0.016; g.add(body);
-  const eave = new THREE.Mesh(new THREE.BoxGeometry(0.068, 0.003, 0.054), lam(0x2f3036)); eave.position.y = 0.033; g.add(eave);
-  const roof = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.046, 0.02, 4, 1).rotateY(Math.PI / 4), lam(0x3a3b42)); roof.scale.z = 0.8; roof.position.y = 0.044; g.add(roof);
-  const win = new THREE.MeshBasicMaterial({ color: 0xffd27a });
-  [-0.019, 0.019].forEach(x0 => { const w = new THREE.Mesh(new THREE.PlaneGeometry(0.012, 0.012), win); w.position.set(x0, 0.017, 0.0222); g.add(w); });
-  const noren = new THREE.Mesh(new THREE.PlaneGeometry(0.02, 0.012), new THREE.MeshBasicMaterial({ map: labelTex('生', 64, 40, '#1d2a5a', '#ffffff', '900 28px sans-serif') }));
-  noren.position.set(0, 0.022, 0.0224); g.add(noren);
-  const sign = new THREE.Mesh(new THREE.PlaneGeometry(0.05, 0.01), new THREE.MeshBasicMaterial({ map: labelTex(C.SHOP.name, 256, 52, '#2a1a10', '#ffd27a', '900 30px serif') }));
-  sign.position.set(0, 0.04, 0.026); g.add(sign);
-  [-0.026, 0.026].forEach(x0 => {
-    const l = new THREE.Mesh(new THREE.SphereGeometry(0.0045, 10, 8), new THREE.MeshBasicMaterial({ color: 0xff5a3a })); l.scale.y = 1.25; l.position.set(x0, 0.026, 0.026); g.add(l);
-    const gl = glowSprite(0xff7a4a, 0.025, 0.6); gl.position.copy(l.position); g.add(gl);
+  const paint = canvasTex(64, 256, (x, w, h) => {
+    x.fillStyle = '#e03b1d'; x.fillRect(0, 0, w, h);
+    for (let i = 0; i < 40; i++) { x.fillStyle = `rgba(${Math.random() < .5 ? '255,150,95' : '120,20,0'},${Math.random() * .14})`; x.fillRect(Math.random() * w, 0, 1 + Math.random() * 2, h); }
   });
-  g.userData.door = new THREE.Vector3(0, 0.01, 0.03);
+  const shu = new THREE.MeshLambertMaterial({ map: paint, emissive: 0x4a0c04 }), black = lam(0x161210), rope = lam(0xd8c182), white = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
+  const pr = W * 0.075;
+  [-1, 1].forEach(s => {
+    const p = new THREE.Mesh(new THREE.CylinderGeometry(pr, pr * 1.08, H, 14), shu); p.position.set(s * W / 2, H / 2, 0); g.add(p);
+    const b = new THREE.Mesh(new THREE.CylinderGeometry(pr * 1.38, pr * 1.38, H * 0.12, 14), black); b.position.set(s * W / 2, H * 0.06, 0); g.add(b);
+    // 鳥居の両脇に灯る小さな御神灯（ぼんぼり風）
+    const lantern = glowSprite(0xffae4a, W * 0.42, 0.55);
+    lantern.position.set(s * (W / 2 + pr * 2.2), H * 0.24, pr * 1.6);
+    g.add(lantern);
+  });
+  const nuki = new THREE.Mesh(new THREE.BoxGeometry(W * 1.44, pr * 1.15, pr * 1.15), shu); nuki.position.y = H * 0.74; g.add(nuki);
+  const shimaki = new THREE.Mesh(new THREE.BoxGeometry(W * 1.54, pr * 1.35, pr * 1.75), shu); shimaki.position.y = H * 0.93; g.add(shimaki);
+  const kg = new THREE.BoxGeometry(W * 1.9, pr * 1.35, pr * 2.15, 24, 1, 1);
+  const kp = kg.attributes.position; for (let i = 0; i < kp.count; i++) { const xx = kp.getX(i) / (W * 0.95); kp.setY(i, kp.getY(i) + Math.pow(Math.abs(xx), 3) * H * 0.07); }
+  kg.computeVertexNormals();
+  const kasagi = new THREE.Mesh(kg, black); kasagi.position.y = H * 0.93 + pr * 1.35; g.add(kasagi);
+
+  // 扁額（神社名を縦書き・金文字で描画）
+  const gakuW = W * 0.2, gakuH = H * 0.18;
+  const gaku = new THREE.Mesh(new THREE.BoxGeometry(gakuW, gakuH, pr * 0.65), black);
+  gaku.position.set(0, H * 0.835, pr * 0.5); g.add(gaku);
+  if (title) {
+    const gakuTex = canvasTex(96, 160, (x, w, h) => {
+      x.fillStyle = '#181310'; x.fillRect(0, 0, w, h);
+      x.strokeStyle = '#ffd25a'; x.lineWidth = 6; x.strokeRect(5, 5, w - 10, h - 10);
+      x.fillStyle = '#ffd966'; x.textAlign = 'center'; x.textBaseline = 'middle';
+      const chars = Array.from(title);
+      const step = (h - 24) / Math.max(1, chars.length);
+      const fs = Math.min(26, Math.floor(step * 0.86));
+      x.font = `900 ${fs}px serif`;
+      chars.forEach((ch, idx) => x.fillText(ch, w / 2, 12 + step * (idx + 0.5)));
+    });
+    const gakuFace = new THREE.Mesh(new THREE.PlaneGeometry(gakuW * 0.92, gakuH * 0.92), new THREE.MeshBasicMaterial({ map: gakuTex }));
+    gakuFace.position.set(0, H * 0.835, pr * 0.86);
+    g.add(gakuFace);
+  }
+
+  const ropeGeo = new THREE.TubeGeometry(new THREE.QuadraticBezierCurve3(new THREE.Vector3(-W / 2, H * 0.71, pr), new THREE.Vector3(0, H * 0.59, pr * 1.35), new THREE.Vector3(W / 2, H * 0.71, pr)), 16, pr * 0.35, 6);
+  g.add(new THREE.Mesh(ropeGeo, rope));
+  [-0.32, -0.11, 0.11, 0.32].forEach(t => {
+    const sh = new THREE.Mesh(new THREE.PlaneGeometry(W * 0.055, H * 0.13), white);
+    sh.position.set(t * W, H * 0.59 - H * 0.08 + Math.abs(t) * H * 0.05, pr * 1.35); g.add(sh);
+  });
+  const glow = glowSprite(0xff6a3c, W * 1.9, 0.32); glow.position.y = H * 0.55; g.add(glow);
   return g;
 }
-function makeKeg() {                   // 生ビールの樽
+
+function makeKeg() {
   const g = new THREE.Group();
   const k = new THREE.Mesh(new THREE.CylinderGeometry(0.0075, 0.0075, 0.014, 14), lam(0xd5d9de, { emissive: 0x222222 }));
   const r1 = new THREE.Mesh(new THREE.CylinderGeometry(0.0079, 0.0079, 0.0018, 14), lam(0x7a808a)); r1.position.y = 0.004;
@@ -1844,7 +1326,8 @@ function makeKeg() {                   // 生ビールの樽
   const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.0025, 0.0025, 0.002, 8), lam(0xe5322d)); cap.position.y = 0.008;
   g.add(k, r1, r2, cap); g.visible = false; return g;
 }
-function makeTalk(text, bg = '#ffffff', fg = '#1d1b22') { // 吹き出し
+
+function makeTalk(text, bg = '#ffffff', fg = '#1d1b22') {
   const tex = canvasTex(320, 120, (x, w, h) => {
     x.fillStyle = bg; x.strokeStyle = 'rgba(0,0,0,.25)'; x.lineWidth = 4;
     x.beginPath(); x.roundRect(6, 6, w - 12, h - 36, 22); x.fill(); x.stroke();
@@ -1858,16 +1341,7 @@ function makeTalk(text, bg = '#ffffff', fg = '#1d1b22') { // 吹き出し
   sp.userData.t = 0;
   return sp;
 }
-function treeColor() { return { haru: 0xffb3cf, natsu: 0x3f9e4a, aki: 0xf08a24, fuyu: 0xf1f5fb }[state.season]; }
-function makeTree(s) {
-  const g = new THREE.Group();
-  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.0018, 0.0024, 0.012, 6), lam(0x7a5030)); trunk.position.y = 0.006; g.add(trunk);
-  const crown = new THREE.Mesh(new THREE.IcosahedronGeometry(0.011, 0), lam(treeColor(), { flatShading: true })); crown.position.y = 0.02; g.add(crown);
-  g.scale.setScalar(s); return g;
-}
 
-
-/* テーブルに落ちる影（建物の足もと） */
 let _shadowTex;
 function makeShadow(pos, rotY, w, d) {
   _shadowTex = _shadowTex || canvasTex(64, 64, (x) => { const g = x.createRadialGradient(32, 32, 4, 32, 32, 32); g.addColorStop(0, 'rgba(0,0,0,.5)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64); });
@@ -1875,212 +1349,115 @@ function makeShadow(pos, rotY, w, d) {
   m.position.set(pos.x, 0.0005, pos.z); m.rotation.y = rotY;
   return m;
 }
-/* 名古屋城（石垣＋白い壁＋緑青の屋根＋金のしゃちほこ） */
-function makeNagoyaCastle() {
-  const g = new THREE.Group();
-  const stone = new THREE.Mesh(new THREE.CylinderGeometry(0.033, 0.045, 0.025, 4, 1).rotateY(Math.PI / 4), lam(0x8d8a82)); stone.scale.z = 0.8; stone.position.y = 0.0125; g.add(stone);
-  const wall = lam(0xf4f1ea), roofM = lam(0x3f8f7d), win = new THREE.MeshBasicMaterial({ color: 0xffd27a });
-  let y = 0.025;
-  [[0.052, 0.016], [0.044, 0.014], [0.036, 0.013], [0.028, 0.012], [0.02, 0.012]].forEach(([w, h], i) => {
-    const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, w * 0.8), wall); b.position.y = y + h / 2; g.add(b);
-    for (let k = -1; k <= 1; k++) { const wd = new THREE.Mesh(new THREE.PlaneGeometry(0.0035, 0.004), win); wd.position.set(k * w * 0.3, y + h * 0.5, w * 0.4 + 0.0003); g.add(wd); }
-    const roof = new THREE.Mesh(new THREE.CylinderGeometry(w * 0.5, w * 0.82, 0.007, 4, 1).rotateY(Math.PI / 4), roofM); roof.scale.z = 0.8; roof.position.y = y + h + 0.0035; g.add(roof);
-    if (i === 1 || i === 3) { const gable = new THREE.Mesh(new THREE.ConeGeometry(w * 0.25, 0.008, 3).rotateY(Math.PI / 2), roofM); gable.position.set(0, y + h + 0.007, w * 0.38); g.add(gable); } // 千鳥破風
-    y += h + 0.007;
-  });
-  const top = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.014, 0.01, 4, 1).rotateY(Math.PI / 4), roofM); top.position.y = y + 0.005; g.add(top);
-  const gold = new THREE.MeshBasicMaterial({ color: 0xffcf3a });
-  [-1, 1].forEach(sx => { const sh = new THREE.Mesh(new THREE.SphereGeometry(0.0028, 8, 6), gold); sh.scale.set(0.7, 1.4, 0.7); sh.position.set(sx * 0.008, y + 0.012, 0); sh.rotation.z = -sx * 0.4; g.add(sh);
-    const gl = glowSprite(0xffd65a, 0.016, 0.8); gl.position.copy(sh.position); g.add(gl); });
-  const sign = new THREE.Mesh(new THREE.PlaneGeometry(0.036, 0.008), new THREE.MeshBasicMaterial({ map: labelTex('名古屋城', 192, 44, '#1d2a5a', '#ffd27a', '900 30px serif') }));
-  sign.position.set(0, 0.012, 0.0365); g.add(sign);
-  return g;
-}
-
-/* 素材の差し替え：画像が指定されていれば、背景透明のイラストを板に貼って立てる（常にこちらを向く） */
-function assetOr(spec, builder) {
-  if (!spec || !spec.file) return builder();
-  const g = new THREE.Group(); g.userData.sprite = true;
-  g.userData.door = new THREE.Vector3(0, spec.height * 0.15, 0.012); // 樽を届ける位置（建物の正面の足もと）
-  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, alphaTest: 0.08 })); // 前後の重なりを正しく
-  sp.center.set(0.5, 0); sp.scale.set(spec.height, spec.height, 1); sp.visible = false; g.add(sp);
-  new THREE.TextureLoader().load(C.SCENERY.dir + spec.file, (t) => {
-    t.colorSpace = THREE.SRGBColorSpace; sp.material.map = t; sp.material.needsUpdate = true; sp.visible = true;
-    sp.scale.set(spec.height * t.image.width / t.image.height, spec.height, 1);
-  }, undefined, () => console.warn('素材の画像を読み込めませんでした', spec.file));
-  return g;
-}
-
-/* 神社の拝殿（石段・朱の柱・大きな屋根・しめ縄・鈴・さい銭箱）＋ おみくじ掛け＋ 石灯籠 */
-function makeShrine() {
-  const g = new THREE.Group();
-  const stone = lam(0xa8a49a), shu = lam(0xd23a2a, { emissive: 0x3a0a04 }), wood = lam(0x7a5233), roofM = lam(0x4a6a60); // 屋根は緑青色
-  const base = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.006, 0.05), stone); base.position.y = 0.003; g.add(base);
-  const step = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.003, 0.008), stone); step.position.set(0, 0.0015, 0.029); g.add(step);
-  const body = new THREE.Mesh(new THREE.BoxGeometry(0.046, 0.022, 0.034), wood); body.position.y = 0.017; g.add(body);
-  [[-0.021, 0.018], [0.021, 0.018], [-0.021, -0.016], [0.021, -0.016], [-0.007, 0.018], [0.007, 0.018]].forEach(([x, z]) => {
-    const c = new THREE.Mesh(new THREE.CylinderGeometry(0.0014, 0.0014, 0.022, 6), shu); c.position.set(x, 0.017, z); g.add(c); });
-  const door = new THREE.Mesh(new THREE.PlaneGeometry(0.03, 0.016), new THREE.MeshBasicMaterial({ color: 0xffc46a })); door.position.set(0, 0.016, 0.0172); g.add(door);
-  // 大きな切妻屋根（反りの代わりに軒を深く）
-  const rs = new THREE.Shape(); rs.moveTo(-0.029, 0); rs.lineTo(0.029, 0); rs.lineTo(0, 0.012); rs.closePath(); // 切妻屋根の断面
-  const roofGeo = new THREE.ExtrudeGeometry(rs, { depth: 0.064, bevelEnabled: false }); roofGeo.translate(0, 0, -0.032); roofGeo.rotateY(Math.PI / 2);
-  const roof = new THREE.Mesh(roofGeo, roofM); roof.position.y = 0.028; g.add(roof);
-  roof.scale.z = 0.85;
-  const ridge = new THREE.Mesh(new THREE.BoxGeometry(0.066, 0.003, 0.004), lam(0x1d2424)); ridge.position.y = 0.0405; g.add(ridge);
-  [-1, 1].forEach(s => [-1, 1].forEach(t => { const ch = new THREE.Mesh(new THREE.BoxGeometry(0.0018, 0.012, 0.0018), lam(0x1d2424)); ch.position.set(s * 0.031, 0.044, t * 0.003); ch.rotation.x = t * 0.5; g.add(ch); })); // 千木
-  const plaque = new THREE.Mesh(new THREE.PlaneGeometry(0.014, 0.008), new THREE.MeshBasicMaterial({ map: labelTex(C.DIORAMA.shrineName, 96, 56, '#1d1b22', '#ffd23a', '900 26px serif') }));
-  plaque.position.set(0, 0.03, 0.0245); g.add(plaque);
-  // しめ縄と紙垂
-  const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.0016, 0.0016, 0.04, 6), lam(0xe8d9a8)); rope.rotation.z = Math.PI / 2; rope.position.set(0, 0.027, 0.0195); g.add(rope);
-  const paper = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
-  [-0.012, 0, 0.012].forEach(x => { const sh = new THREE.Mesh(new THREE.PlaneGeometry(0.0025, 0.006), paper); sh.position.set(x, 0.0225, 0.0198); g.add(sh); });
-  // 鈴とさい銭箱
-  const bell = new THREE.Mesh(new THREE.SphereGeometry(0.0028, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffcf3a })); bell.position.set(0, 0.024, 0.021); g.add(bell);
-  const box = new THREE.Mesh(new THREE.BoxGeometry(0.016, 0.006, 0.006), wood); box.position.set(0, 0.009, 0.024); g.add(box);
-  // 石灯籠（左右）
-  [-0.028, 0.028].forEach(x => {
-    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.002, 0.0028, 0.014, 6), stone); post.position.set(x, 0.007, 0.03); g.add(post);
-    const hood = new THREE.Mesh(new THREE.ConeGeometry(0.0055, 0.004, 6), stone); hood.position.set(x, 0.0175, 0.03); g.add(hood);
-    const fire = glowSprite(0xffc46a, 0.014, 0.8); fire.position.set(x, 0.0145, 0.03); g.add(fire);
-  });
-  // おみくじ掛け（白いおみくじがたくさん結ばれている）
-  const rack = new THREE.Group(); rack.position.set(0.042, 0, 0.006);
-  [-0.009, 0.009].forEach(x => { const p = new THREE.Mesh(new THREE.CylinderGeometry(0.0008, 0.0008, 0.018, 5), wood); p.position.set(x, 0.009, 0); rack.add(p); });
-  [0.012, 0.017].forEach(y => { const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.0006, 0.0006, 0.02, 5), wood); bar.rotation.z = Math.PI / 2; bar.position.y = y; rack.add(bar);
-    for (let i = 0; i < 6; i++) { const k = new THREE.Mesh(new THREE.BoxGeometry(0.0018, 0.0035, 0.0012), paper); k.position.set(-0.0075 + i * 0.003, y - 0.0012, 0); k.rotation.z = (Math.random() - 0.5) * 0.4; rack.add(k); } });
-  g.add(rack);
-  g.scale.setScalar(1.25); // 大きめに
-  return g;
-}
-
-/* 大きな鳥居（明神鳥居）。道路をまたいで立ち、トラックがくぐる */
-function makeTorii(W = 0.078, H = 0.1) {          // W＝柱と柱の間、H＝高さ（道路をまたげる立体の鳥居）
-  const g = new THREE.Group();
-  const paint = canvasTex(64, 256, (x, w, h) => {          // 朱塗りの木目
-    x.fillStyle = '#d9431f'; x.fillRect(0, 0, w, h);
-    for (let i = 0; i < 40; i++) { x.fillStyle = `rgba(${Math.random() < .5 ? '255,140,90' : '120,20,0'},${Math.random() * .12})`; x.fillRect(Math.random() * w, 0, 1 + Math.random() * 2, h); }
-  });
-  const shu = new THREE.MeshLambertMaterial({ map: paint, emissive: 0x3a0804 }), black = lam(0x161210), rope = lam(0xc9b27a), white = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
-  const pr = W * 0.075;
-  [-1, 1].forEach(s => {
-    const p = new THREE.Mesh(new THREE.CylinderGeometry(pr, pr * 1.08, H, 14), shu); p.position.set(s * W / 2, H / 2, 0); g.add(p);
-    const b = new THREE.Mesh(new THREE.CylinderGeometry(pr * 1.35, pr * 1.35, H * 0.12, 14), black); b.position.set(s * W / 2, H * 0.06, 0); g.add(b); // 根巻き
-  });
-  const nuki = new THREE.Mesh(new THREE.BoxGeometry(W * 1.42, pr * 1.1, pr * 1.1), shu); nuki.position.y = H * 0.74; g.add(nuki);           // 貫
-  const shimaki = new THREE.Mesh(new THREE.BoxGeometry(W * 1.5, pr * 1.3, pr * 1.7), shu); shimaki.position.y = H * 0.93; g.add(shimaki); // 島木
-  const kg = new THREE.BoxGeometry(W * 1.85, pr * 1.3, pr * 2.1, 24, 1, 1);                                                                  // 笠木：両端が反り上がる
-  const kp = kg.attributes.position; for (let i = 0; i < kp.count; i++) { const xx = kp.getX(i) / (W * 0.925); kp.setY(i, kp.getY(i) + Math.pow(Math.abs(xx), 3) * H * 0.06); }
-  kg.computeVertexNormals();
-  const kasagi = new THREE.Mesh(kg, black); kasagi.position.y = H * 0.93 + pr * 1.3; g.add(kasagi);
-  const gaku = new THREE.Mesh(new THREE.BoxGeometry(W * 0.16, H * 0.15, pr * 0.6), black); gaku.position.set(0, H * 0.835, pr * 0.5); g.add(gaku); // 額
-  const ropeGeo = new THREE.TubeGeometry(new THREE.QuadraticBezierCurve3(new THREE.Vector3(-W / 2, H * 0.71, pr), new THREE.Vector3(0, H * 0.6, pr * 1.3), new THREE.Vector3(W / 2, H * 0.71, pr)), 16, pr * 0.32, 6);
-  g.add(new THREE.Mesh(ropeGeo, rope));                                                                                                       // しめ縄
-  [-0.3, -0.1, 0.1, 0.3].forEach(t => { const sh = new THREE.Mesh(new THREE.PlaneGeometry(W * 0.05, H * 0.12), white);                       // 紙垂
-    sh.position.set(t * W, H * 0.6 - H * 0.08 + Math.abs(t) * H * 0.05, pr * 1.3); g.add(sh); });
-  const glow = glowSprite(0xff6a3c, W * 1.6, 0.25); glow.position.y = H * 0.55; g.add(glow);
-  return g;
-}
-
-/* 道ぞいのお店（色と看板を変えて並べる） */
-function makeStreetShop(st) {
-  const g = new THREE.Group();
-  const body = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.026, 0.034), lam(new THREE.Color(st.wall).getHex())); body.position.y = 0.013; g.add(body);
-  const roof = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.033, 0.014, 4, 1).rotateY(Math.PI / 4), lam(new THREE.Color(st.roof).getHex())); roof.scale.z = 0.85; roof.position.y = 0.033; g.add(roof);
-  const noren = new THREE.Mesh(new THREE.PlaneGeometry(0.016, 0.009), new THREE.MeshBasicMaterial({ color: new THREE.Color(st.noren) })); noren.position.set(0, 0.016, 0.0171); g.add(noren);
-  const winL = new THREE.Mesh(new THREE.PlaneGeometry(0.009, 0.008), new THREE.MeshBasicMaterial({ color: 0xffd27a })); winL.position.set(-0.013, 0.012, 0.0171); g.add(winL);
-  const winR = winL.clone(); winR.position.x = 0.013; g.add(winR);
-  const sign = new THREE.Mesh(new THREE.PlaneGeometry(0.03, 0.008), new THREE.MeshBasicMaterial({ map: labelTex(st.name, 160, 44, '#fffaf0', '#1d1b22', '900 30px sans-serif') }));
-  sign.position.set(0, 0.028, 0.0178); g.add(sign);
-  const l = new THREE.Mesh(new THREE.SphereGeometry(0.0035, 8, 6), new THREE.MeshBasicMaterial({ color: 0xff5a3a })); l.scale.y = 1.3; l.position.set(0.021, 0.02, 0.019); g.add(l);
-  const gl = glowSprite(0xff7a4a, 0.018, 0.55); gl.position.copy(l.position); g.add(gl);
-  return g;
-}
 
 function buildDiorama(center) {
   const DI = C.DIORAMA, H = 0.001;
   const g = new THREE.Group(); g.position.copy(center); g.scale.setScalar(0.001);
-  const toCam = Math.atan2(-center.z, -center.x);               // グラスから見た「お客さん側」の角度
-  const polar = (a, r, y = H) => new THREE.Vector3(Math.cos(a) * r, y, Math.sin(a) * r);
-  const faceCam = (obj) => { const wp = obj.position.clone().add(center); obj.rotation.y = Math.atan2(-wp.x, -wp.z); }; // 正面をこちらへ
-  // 地面の台はなし：道路と建物が、本物のテーブルの上に直接立つ
-  // ローカル座標：x＝画面の右方向、f＝お客さん（カメラ）に向かう方向
+  const toCam = Math.atan2(-center.z, -center.x);
   const F = new THREE.Vector3(Math.cos(toCam), 0, Math.sin(toCam)), Rv = new THREE.Vector3(Math.sin(toCam), 0, -Math.cos(toCam));
   const lp = (x, f, y = H) => Rv.clone().multiplyScalar(x).addScaledVector(F, f).setY(y);
-  // 道路：陸上トラック形（手前と奥がまっすぐ、左右が半円）
+
   const Rr = DI.roadRadius, Ls = DI.roadStraight, rw = 0.04;
-  const L = 4 * Ls + 2 * Math.PI * Rr;                               // 一周の長さ
-  const path = (d, off = 0) => {                                     // 道のり d の位置 [x, f] と外向きの向き [nx, nf]
+  const L = 4 * Ls + 2 * Math.PI * Rr;
+  const path = (d, off = 0) => {
     d = ((d % L) + L) % L; const r = Rr + off, s1 = 2 * Ls, s2 = s1 + Math.PI * Rr, s3 = s2 + 2 * Ls;
-    if (d < s1) return [-Ls + d, r, 0, 1];                                            // 手前の直線（左→右）
-    if (d < s2) { const t = (d - s1) / Rr; return [Ls + r * Math.sin(t), r * Math.cos(t), Math.sin(t), Math.cos(t)]; } // 右のカーブ
-    if (d < s3) return [Ls - (d - s2), -r, 0, -1];                                    // 奥の直線（右→左）
-    const t = (d - s3) / Rr; return [-Ls - r * Math.sin(t), -r * Math.cos(t), -Math.sin(t), -Math.cos(t)]; // 左のカーブ
+    if (d < s1) return [-Ls + d, r, 0, 1];
+    if (d < s2) { const t = (d - s1) / Rr; return [Ls + r * Math.sin(t), r * Math.cos(t), Math.sin(t), Math.cos(t)]; }
+    if (d < s3) return [Ls - (d - s2), -r, 0, -1];
+    const t = (d - s3) / Rr; return [-Ls - r * Math.sin(t), -r * Math.cos(t), -Math.sin(t), -Math.cos(t)];
   };
-  const ribbon = (off, width, color, y) => {                         // 道のりに沿った帯（道路・白線）
+  const ribbon = (off, width, color, y) => {
     const n = 160, pos = [], idx = [];
-    for (let i = 0; i <= n; i++) { const [x, f, nx, nf] = path(L * i / n, off);
-      const o = lp(x + nx * width / 2, f + nf * width / 2, y), q = lp(x - nx * width / 2, f - nf * width / 2, y); pos.push(o.x, o.y, o.z, q.x, q.y, q.z);
-      if (i < n) idx.push(i * 2, i * 2 + 1, i * 2 + 2, i * 2 + 1, i * 2 + 3, i * 2 + 2); }
+    for (let i = 0; i <= n; i++) {
+      const [x, f, nx, nf] = path(L * i / n, off);
+      const o = lp(x + nx * width / 2, f + nf * width / 2, y), q = lp(x - nx * width / 2, f - nf * width / 2, y);
+      pos.push(o.x, o.y, o.z, q.x, q.y, q.z);
+      if (i < n) idx.push(i * 2, i * 2 + 1, i * 2 + 2, i * 2 + 1, i * 2 + 3, i * 2 + 2);
+    }
     const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setIndex(idx); geo.computeVertexNormals();
     const m = new THREE.Mesh(geo, color.isMaterial ? color : new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide })); g.add(m); return m;
   };
   ribbon(0, rw, lam(0x4a4d55, { side: THREE.DoubleSide }), H + 0.0008);
   [-rw / 2 + 0.002, rw / 2 - 0.002].forEach(o => ribbon(o, 0.0016, 0xf2f2f2, H + 0.0012));
+
   const N = Math.round(L / 0.016), dash = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.009, 0.0016).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffd23a }), N);
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0), one = new THREE.Vector3(1, 1, 1);
-  for (let i = 0; i < N; i++) { const [x, f, nx, nf] = path(L * i / N); const nw = Rv.clone().multiplyScalar(nx).addScaledVector(F, nf);
-    q.setFromAxisAngle(up, Math.atan2(-nw.z, nw.x) + Math.PI / 2); m4.compose(lp(x, f, H + 0.0014), q, one); dash.setMatrixAt(i, m4); }
+  for (let i = 0; i < N; i++) {
+    const [x, f, nx, nf] = path(L * i / N);
+    const nw = Rv.clone().multiplyScalar(nx).addScaledVector(F, nf);
+    q.setFromAxisAngle(up, Math.atan2(-nw.z, nw.x) + Math.PI / 2); m4.compose(lp(x, f, H + 0.0014), q, one); dash.setMatrixAt(i, m4);
+  }
   g.add(dash);
 
-  // 建物の配置（ご指定どおり）
-  //   左のカーブの外：物流倉庫とお店の並び（奥→手前に、カーブに沿って横にくっつけて並ぶ）
-  //   右のカーブの外：名古屋城
-  //   手前の直線：道路をまたぐ大鳥居と、その手前に速達生神社
-  //   奥の直線（グラスのうしろ）は空ける（建物が本物のグラスにかぶらないように）
-  const pops = [];
-  const A = DI.assets || {};
-  const faceFront = (obj) => { obj.rotation.y = Math.atan2(F.x, F.z); };    // 正面をお客さん側へ
-  const place = (obj, x, f, w, d) => { obj.position.copy(lp(x, f)); faceFront(obj); g.add(obj); pops.push(obj);
-    g.add(makeShadow(obj.position, obj.rotation.y, w, d)); return obj; };   // テーブルに落ちる影で「立っている」感じを出す
-  const asp = { castle: 0.83, izakaya: 0.92, warehouse: 1.75, shrine: 1.05, street: [1.15, 0.88, 1.09, 0.85] }; // 画像の横÷縦
-  const st = DI.street || [];
-  const item = (spec, builder, aspect) => ({ spec, builder, w: (spec && spec.file ? spec.height * aspect : 0.06) * 0.9 });
-  const streetItem = (i) => item({ file: (A.street || [])[i], height: DI.shopHeight }, () => makeStreetShop(st[i]), asp.street[i]);
-  // 左のカーブの外に沿って並べる（奥 → 左 → 手前）
+  const pops = [], A = DI.assets;
+  const faceFront = (obj) => { obj.rotation.y = Math.atan2(F.x, F.z); };
+  const place = (obj, x, f, w, d) => {
+    obj.position.copy(lp(x, f)); faceFront(obj); g.add(obj); pops.push(obj);
+    g.add(makeShadow(obj.position, obj.rotation.y, w, d)); return obj;
+  };
+  const asp = { castle: 0.83, izakaya: 0.92, warehouse: 1.75, shrine: 1.05, street: [1.15, 0.88, 1.09, 0.85] };
+  const item = (file, height, aspect) => ({ file, height, w: height * aspect * 0.9 });
+  const streetItem = (i) => item(A.street[i], DI.shopHeight, asp.street[i]);
+
   const Ro = Rr + rw / 2 + 0.03;
-  const leftItems = [item(A.shop, makeShop, asp.izakaya), streetItem(3), streetItem(1), streetItem(0), streetItem(2), item(A.warehouse, makeWarehouse, asp.warehouse)]; // 奥：居酒屋 … 手前：物流倉庫（最初のお届けが短く済む順）
+  const leftItems = [
+    item(A.shop.file, A.shop.height, asp.izakaya),
+    streetItem(3), streetItem(1), streetItem(0), streetItem(2),
+    item(A.warehouse.file, A.warehouse.height, asp.warehouse)
+  ];
   let phi = 0.15; const placed = [];
   leftItems.forEach(it => {
-    phi += (it.w / 2) / (Ro + it.w * 0.25);
     const r = Ro + it.w * 0.25;
-    placed.push(place(assetOr(it.spec, it.builder), -Ls - r * Math.sin(phi), -r * Math.cos(phi), it.w, it.w * 0.6));
-    phi += (it.w / 2) / (Ro + it.w * 0.25);
+    phi += (it.w / 2) / r;
+    placed.push(place(makeAssetSprite(it.file, it.height), -Ls - r * Math.sin(phi), -r * Math.cos(phi), it.w, it.w * 0.6));
+    phi += (it.w / 2) / r;
   });
   const shop = placed[0], wh = placed[placed.length - 1];
-  // 右のカーブの外：名古屋城
-  if (DI.landmark) { const c = item(A.castle, makeNagoyaCastle, asp.castle); place(assetOr(c.spec, c.builder), Ls + Rr + rw / 2 + c.w * 0.42, -0.015, c.w, c.w * 0.8); }
-  // 手前の直線：大鳥居（立体）が道路をまたぎ、手前に速達生神社
-  if (DI.shrine) {
-    const tx = 0.0, tilt = 0.8;                                       // 鳥居を斜め(約45°)に置いて、正面から見ても鳥居の形がわかるように
-    const torii = makeTorii((rw + 0.03) / Math.cos(tilt), DI.toriiHeight || 0.11);
-    torii.position.copy(lp(tx, Rr)); torii.rotation.y = Math.atan2(-F.z, F.x) + tilt; // 柱が道路の両側に立ち、トラックが下をくぐる
-    g.add(torii); pops.push(torii);
-    g.add(makeShadow(torii.position, torii.rotation.y + Math.PI / 2, 0.02, rw + 0.06));
-    const sh = item(A.shrine, makeShrine, asp.shrine);
-    place(assetOr(sh.spec, sh.builder), Ls + 0.02, Rr + rw / 2 + sh.w * 0.4, sh.w, sh.w * 0.7); // 神社は手前の右（グラスを隠さないように）
+
+  if (DI.landmark) {
+    const c = item(A.castle.file, A.castle.height, asp.castle);
+    place(makeAssetSprite(c.file, c.height), Ls + Rr + rw / 2 + c.w * 0.42, -0.015, c.w, c.w * 0.8);
   }
-  // トラックが止まる場所（道のり）：建物にいちばん近い道路の位置
-  const nearestD = (obj) => { const v = obj.position.clone(); let best = 0, bd = 1e9;
-    for (let i = 0; i < 400; i++) { const d = L * i / 400, [x, f] = path(d); const dd = lp(x, f).distanceTo(v); if (dd < bd) { bd = dd; best = d; } } return best; };
+  if (DI.shrine) {
+    // ① 道路手前の中央に堂々と立つ「大鳥居」（正面からシルエットと扁額がよく見える角度に調整）
+    const tilt = 0.36;
+    const torii = makeTorii((rw + 0.036) / Math.cos(tilt), DI.toriiHeight || 0.145, DI.shrineName || '速達生神社');
+    torii.position.copy(lp(-0.015, Rr)); torii.rotation.y = Math.atan2(-F.z, F.x) + tilt;
+    g.add(torii); pops.push(torii);
+    g.add(makeShadow(torii.position, torii.rotation.y + Math.PI / 2, 0.028, rw + 0.075));
+
+    // ② 主役の「速達生神社」（手前右に大きく配置＋金色の後光オーラで存在感アップ）
+    const sh = item(A.shrine.file, A.shrine.height, asp.shrine);
+    const shPosX = Ls + 0.015, shPosF = Rr + rw / 2 + sh.w * 0.36;
+    const shrineObj = place(makeAssetSprite(sh.file, sh.height), shPosX, shPosF, sh.w, sh.w * 0.7);
+    const shrineAura = glowSprite(0xffd26a, sh.height * 1.85, 0.45);
+    shrineAura.position.copy(shrineObj.position).add(new THREE.Vector3(0, sh.height * 0.55, 0));
+    g.add(shrineAura);
+
+    // ③ 社前鳥居（神社の入口前にもう一基の小鳥居を立てて参道の雰囲気を演出）
+    const subTorii = makeTorii(0.056, 0.072);
+    subTorii.position.copy(lp(shPosX - 0.025, shPosF + 0.028));
+    subTorii.rotation.y = Math.atan2(F.x, F.z) - 0.18;
+    g.add(subTorii); pops.push(subTorii);
+    g.add(makeShadow(subTorii.position, subTorii.rotation.y, 0.06, 0.02));
+  }
+
+  const nearestD = (obj) => {
+    const v = obj.position.clone(); let best = 0, bd = 1e9;
+    for (let i = 0; i < 400; i++) { const d = L * i / 400, [x, f] = path(d); const dd = lp(x, f).distanceTo(v); if (dd < bd) { bd = dd; best = d; } }
+    return best;
+  };
   const aW = nearestD(wh), aS = nearestD(shop);
-  // 樽・吹き出し
+
   const keg = makeKeg(); g.add(keg);
   const talkW = makeTalk(''), talkS = makeTalk('');
-  talkW.position.copy(wh.position).add(new THREE.Vector3(0, 0.07, 0)); talkS.position.copy(shop.position).add(new THREE.Vector3(0, 0.075, 0));
+  talkW.position.copy(wh.position).add(new THREE.Vector3(0, 0.07, 0));
+  talkS.position.copy(shop.position).add(new THREE.Vector3(0, 0.075, 0));
   g.add(talkW, talkS);
   scene.add(g);
+
   pops.forEach((o, i) => { o.userData.base = o.scale.x; o.userData.delay = 0.25 + i * 0.06; o.scale.setScalar(0.001); });
-  return { g, H, aW, aS, wh, shop, keg, talkW, talkS, pops, t: 0, kegAnim: null, firstDone: false,
+  return { g, H, aW, aS, wh, shop, keg, talkW, talkS, pops, t: 0, kegAnim: null, started: false, delivered: false,
     L, pathWorld: (d, off) => { const [x, f] = path(d, off); return lp(x, f).add(g.position); } };
 }
 
@@ -2095,11 +1472,10 @@ function doorLocal(b) { return b.position.clone().add(b.userData.door.clone().ap
 function updateDiorama(dt) {
   const d = diorama; if (!d) return;
   d.t += dt;
-  d.g.scale.setScalar(Math.max(0.001, easeOutBack(Math.min(1, d.t / 0.8))));  // ジオラマがぽんっと広がる
-  d.pops.forEach(o => { const k = THREE.MathUtils.clamp((d.t - o.userData.delay) / 0.4, 0, 1); o.scale.setScalar(Math.max(0.001, easeOutBack(k) * o.userData.base));
-    if (o.userData.tick) o.userData.tick(d.t); });                 // のれん・ちょうちん等のうごき
+  d.g.scale.setScalar(Math.max(0.001, easeOutBack(Math.min(1, d.t / 0.8))));
+  d.pops.forEach(o => { const k = THREE.MathUtils.clamp((d.t - o.userData.delay) / 0.4, 0, 1); o.scale.setScalar(Math.max(0.001, easeOutBack(k) * o.userData.base)); });
   [d.talkW, d.talkS].forEach(sp => { sp.userData.t -= dt; sp.material.opacity = THREE.MathUtils.clamp(sp.userData.t * 3, 0, 1); });
-  if (d.kegAnim) {                                                   // 樽がぴょんと飛ぶ
+  if (d.kegAnim) {
     const k = Math.min(1, (d.kegAnim.t += dt) / 0.6);
     d.keg.position.lerpVectors(d.kegAnim.a, d.kegAnim.b, k); d.keg.position.y += Math.sin(k * Math.PI) * 0.035;
     d.keg.rotation.z = k * Math.PI * 2;
@@ -2107,184 +1483,336 @@ function updateDiorama(dt) {
   }
 }
 
-// トラックの運行：物流センターで積む → 手前をまわって → お店に届ける → うしろを通って戻る（くり返し）
+/* ---- トラック・配送演出 ---- */
+function glassWorldPosition(rect) {
+  if (!state.camOK) return stageGlass.clone();
+  const fovV = THREE.MathUtils.degToRad(camera.fov);
+  let sx = innerWidth / 2, sy = innerHeight * 0.6, dist = 0.6;
+  if (rect) {
+    sx = rect.x + rect.w / 2; sy = rect.y + rect.h * 0.1;
+    const frac = Math.max(0.05, rect.h / innerHeight);
+    dist = THREE.MathUtils.clamp(C.DETECTION.glassHeightM / (2 * Math.tan(fovV / 2) * frac), 0.25, 1.4);
+  }
+  const ndc = new THREE.Vector2((sx / innerWidth) * 2 - 1, -(sy / innerHeight) * 2 + 1);
+  const ray = new THREE.Raycaster(); ray.setFromCamera(ndc, camera);
+  return ray.ray.at(dist, new THREE.Vector3());
+}
+
+function createTruck(center) {
+  const D = C.DELIVERY, DI = C.DIORAMA.enabled ? C.DIORAMA : null;
+  const texL = new THREE.Texture(truckImg); texL.colorSpace = THREE.SRGBColorSpace; texL.needsUpdate = true;
+  const texR = new THREE.CanvasTexture(truckFacingRight(truckImg)); texR.colorSpace = THREE.SRGBColorSpace;
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texL, transparent: true, depthWrite: false }));
+  sprite.center.set(0.5, 0.02);
+  const L = DI ? DI.truckLength : D.length, H = L * truckImg.naturalHeight / truckImg.naturalWidth;
+  sprite.scale.set(L, H, 1);
+  const shadowTex = canvasTex(64, 64, (x) => { const g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, 'rgba(0,0,0,.55)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64); });
+  const shadow = new THREE.Mesh(new THREE.PlaneGeometry(L * 1.15, L * 0.45).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false }));
+  const light = glowSprite(0xffe7a0, L * 0.9, 0.7);
+  scene.add(shadow, sprite, light);
+  const toCam = Math.atan2(-center.z, -center.x);
+  return { sprite, shadow, light, texL, texR, L, H, center, a: toCam + Math.PI, facing: 'L', t: 0, target: null, stopT: 0, onArrive: null,
+    radius: DI ? DI.roadRadius : D.radius, speed: DI ? DI.speed : D.speed };
+}
+
+function startDelivery() {
+  clearParcel();
+  state.mode = 'readyDraw';
+  const tableY = glassPos.y - C.DETECTION.glassHeightM;
+  const center = new THREE.Vector3(glassPos.x, tableY, glassPos.z);
+  truckReady.then(ok => {
+    if (state.mode !== 'readyDraw') return;
+    if (ok) {
+      if (C.DIORAMA.enabled) startDioramaDelivery(center);
+      else if (!truck) truck = createTruck(center);
+    }
+    readyToDraw();
+  });
+}
+
+function readyToDraw() {
+  state.mode = 'readyDraw';
+  $('#drawBtn').classList.remove('hidden');
+  setGuide('⛩️ 速達生神社があらわれた！', '画面をタップして、泡のおみくじを引こう');
+}
+
+function drawBubbleOmikuji() {
+  if (state.mode !== 'readyDraw') return;
+  state.mode = 'delivering';
+  $('#drawBtn').classList.add('hidden');
+  SE.bell();
+  SE.bubbleUp();
+  if (navigator.vibrate) navigator.vibrate(30);
+  // もこもこ演出は挟まず、グラスの位置から直接おみくじ入りの泡がふわっと出現
+  launchBubble(glassPos.clone().add(new THREE.Vector3(0, 0.02, 0)));
+  setGuide('🫧 おみくじの泡がふわっと出てきたよ！', '目の前にきたら開くよ');
+}
+
+$('#drawBtn').onclick = (e) => { e.stopPropagation(); drawBubbleOmikuji(); };
+
 function startDioramaDelivery(center) {
   if (!diorama) diorama = buildDiorama(center);
   if (!truck) {
-    truck = createTruck(center); truck.a = diorama.aW; truck.stopT = 1.4; truck.off = -0.009;           // 内側の車線
-    if (C.DIORAMA.trucks >= 2) { truck2 = createTruck(center); truck2.dir = -1; truck2.off = 0.009; truck2.a = diorama.aS + diorama.L * 0.3; truck2.speed *= 0.9; } // 外側の車線を反対まわり
+    truck = createTruck(center); truck.a = diorama.aW; truck.stopT = 0.8; truck.off = -0.009;
+    if (C.DIORAMA.trucks >= 2) {
+      truck2 = createTruck(center); truck2.dir = -1; truck2.off = 0.009; truck2.a = diorama.aS + diorama.L * 0.3; truck2.speed *= 0.9;
+    }
   }
   const D = diorama, DI = C.DIORAMA;
-  const below = (a0) => a0 + D.L * Math.floor((truck.a - 0.01 - a0) / D.L); // 今より手前（減る方向）で一番近い停車位置
+  const below = (a0) => a0 + D.L * Math.floor((truck.a - 0.01 - a0) / D.L);
+
+  // トラックは到着待ちをせず、テーブル上の賑やかし演出として元気に走り続ける
   const toShop = () => {
     truck.target = below(D.aS);
     truck.onArrive = () => {
-      truck.stopT = 1.8;
+      truck.stopT = 1.6;
       kegFly(truckLocal(), doorLocal(D.shop));
-      sayTalk(D.talkS, DI.deliverText, 1.8, '#e5322d', '#ffffff');
-      if (navigator.vibrate) navigator.vibrate(30);
-      if (state.mode === 'delivering' && !D.delivered) {           // 最初のお届けのあと、おみくじが出てくる
-        D.delivered = true;
-        setGuide('🍺 できたての生ビールがお店に到着！', 'つぎは、あなたのグラスに注目…');
-        setTimeout(() => { if (state.mode !== 'delivering') return;
-          if (C.REVEAL.style === 'bubble') startFoam(glassPos.clone());
-          else launchParcel(truck.sprite.position.clone().add(new THREE.Vector3(0, truck.H * 0.75, 0)));
-        }, 1100);
-      }
-      toWarehouse();
+      sayTalk(D.talkS, DI.deliverText, 1.6, '#e5322d', '#ffffff');
+      setTimeout(toWarehouse, 0);
     };
   };
   const toWarehouse = () => {
-    setTimeout(() => {
-      truck.target = below(D.aW);
-      truck.onArrive = () => {
-        truck.stopT = 1.6;
-        kegFly(doorLocal(D.wh), truckLocal());
-        sayTalk(D.talkW, DI.loadText, 1.6);
-        toShop();
-      };
-    }, 0);
+    truck.target = below(D.aW);
+    truck.onArrive = () => {
+      truck.stopT = 1.4;
+      kegFly(doorLocal(D.wh), truckLocal());
+      sayTalk(D.talkW, DI.loadText, 1.4);
+      setTimeout(toShop, 0);
+    };
   };
+
   if (!D.started) {
     D.started = true;
     sayTalk(D.talkW, DI.departText, 2.0, '#ffc53d', '#2a1600');
-    setGuide('🚚 速達生の物流センターから出発！', '生ビールをお店まで届けるよ');
     toShop();
-  } else {                                                           // 「もう一度見る」：トラックはそのまま、グラスから
-    setGuide('🍺 グラスに注目…');
-    setTimeout(() => { if (state.mode !== 'delivering') return;
-      if (C.REVEAL.style === 'bubble') startFoam(glassPos.clone()); else launchParcel(glassPos.clone()); }, 900);
   }
 }
 
-/* 小包（段ボール箱）：基本図形＋手描きのテクスチャ */
-function drawKraft(x, w, h) {
-  x.fillStyle = '#c8955a'; x.fillRect(0, 0, w, h);
-  for (let i = 0; i < 900; i++) { x.fillStyle = `rgba(${90 + Math.random() * 60 | 0},${55 + Math.random() * 40 | 0},20,${Math.random() * 0.12})`; x.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
-  x.strokeStyle = 'rgba(90,55,20,.35)'; x.lineWidth = 3; x.strokeRect(2, 2, w - 4, h - 4);
+const _tt = {};
+function updateTruck(dt) { updateTruckOne(truck, dt); updateTruckOne(truck2, dt); }
+function updateTruckOne(tr, dt) {
+  if (!tr) return;
+  if (!_tt.v) { _tt.v = new THREE.Vector3(); _tt.p = new THREE.Vector3(); _tt.r = new THREE.Vector3(); }
+  tr.t += dt;
+  let moving = true;
+  if (tr.stopT > 0) { tr.stopT -= dt; moving = false; }
+  else {
+    let step = tr.speed * dt / (diorama && diorama.L ? 1 : tr.radius);
+    if (tr.target != null) {
+      const rem = tr.a - tr.target;
+      step = Math.min(rem, step * THREE.MathUtils.clamp(rem / (diorama && diorama.L ? 0.09 : 0.9), 0.12, 1));
+      if (rem <= 0.0005) { tr.target = null; tr.stopT = 2.2; moving = false; const cb = tr.onArrive; tr.onArrive = null; cb && cb(); step = 0; }
+    }
+    tr.a -= step * (tr.dir || 1);
+  }
+  const yOff = diorama ? diorama.H : 0;
+  const bump = moving ? Math.abs(Math.sin(tr.t * 22)) * 0.0012 : 0;
+  const p = diorama && diorama.L
+    ? _tt.p.copy(diorama.pathWorld(tr.a, tr.off || 0)).setY(tr.center.y + yOff + bump)
+    : _tt.p.set(tr.center.x + Math.cos(tr.a) * tr.radius, tr.center.y + yOff + bump, tr.center.z + Math.sin(tr.a) * tr.radius);
+  const before = _tt.v.copy(tr.sprite.position).project(camera).x, after = p.clone().project(camera).x;
+  if (Math.abs(after - before) > 0.0008) {
+    const want = after > before ? 'R' : 'L';
+    if (want !== tr.facing) { tr.facing = want; tr.sprite.material.map = want === 'R' ? tr.texR : tr.texL; tr.sprite.material.needsUpdate = true; }
+  }
+  tr.sprite.position.copy(p);
+  tr.shadow.position.set(p.x, tr.center.y + yOff + 0.0015, p.z);
+  const right = _tt.r.set(1, 0, 0).applyQuaternion(camera.quaternion);
+  tr.shadow.rotation.y = Math.atan2(-right.z, right.x);
+  tr.light.position.copy(p).addScaledVector(right, (tr.facing === 'R' ? 1 : -1) * tr.L * 0.5).add(new THREE.Vector3(0, tr.H * 0.3, 0));
+
+  const dT = Math.hypot(p.x, p.z), dG = Math.hypot(tr.center.x, tr.center.z);
+  let ang = Math.atan2(p.z, p.x) - Math.atan2(tr.center.z, tr.center.x);
+  ang = Math.atan2(Math.sin(ang), Math.cos(ang));
+  const cover = (0.045 + tr.L * 0.45) / Math.max(0.1, dG);
+  const hidden = dT > dG ? THREE.MathUtils.clamp((cover - Math.abs(ang)) / (cover * 0.35), 0, 1) : 0;
+  tr.sprite.material.opacity = 1 - hidden;
+  tr.light.material.opacity = 0.7 * (1 - hidden);
+  tr.shadow.material.opacity = 1 - hidden * 0.6;
 }
-function makeParcel() {
-  const S = 0.095;                                                // 箱の大きさ(m)
-  const kraft = canvasTex(128, 128, (x, w, h) => { drawKraft(x, w, h); x.fillStyle = 'rgba(230,200,140,.55)'; x.fillRect(w * 0.4, 0, w * 0.2, h); });
-  const front = canvasTex(256, 192, (x, w, h) => {
-    drawKraft(x, w, h);
-    x.fillStyle = '#fffdf6'; x.fillRect(22, 30, 212, 132);         // 伝票ラベル
-    x.strokeStyle = '#e5322d'; x.lineWidth = 3; x.strokeRect(22, 30, 212, 132);
-    x.fillStyle = '#e5322d'; x.fillRect(22, 30, 212, 30);
-    x.fillStyle = '#fff'; x.font = 'bold 20px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('速達おみくじ便', 128, 46);
-    x.fillStyle = '#1d1b22'; x.font = 'bold 22px sans-serif'; x.fillText('おみくじ在中', 110, 96);
-    x.font = 'bold 14px sans-serif'; x.fillText('こわれもの・天地無用', 110, 132);
-    x.strokeStyle = '#e5322d'; x.lineWidth = 4; x.beginPath(); x.arc(196, 108, 26, 0, 7); x.stroke();
-    x.fillStyle = '#e5322d'; x.font = 'bold 18px sans-serif'; x.fillText('速達', 196, 109);
+
+/* ---- 泡のカプセル＆おみくじ動画 ---- */
+const BUBBLE_FS = `
+  uniform float uTime; uniform float uOpacity;
+  varying vec3 vN; varying vec3 vV; varying vec3 vP;
+  void main(){
+    vec3 n = normalize(vN);
+    float fres = pow(1.0 - abs(dot(n, normalize(vV))), 1.6);
+    vec3 film = 0.5 + 0.5 * cos(6.2832 * (fres * 1.4 + vP.y * 8.0 + uTime * 0.15 + vec3(0.0, 0.33, 0.67)));
+    vec3 col = mix(vec3(1.0, 0.86, 0.45), film, 0.45) * (0.35 + fres * 1.2);
+    col += pow(max(0.0, dot(n, normalize(vec3(-0.4, 0.6, 0.7)))), 40.0) * 1.5;
+    gl_FragColor = vec4(col, (0.12 + fres * 0.8) * uOpacity);
+  }`;
+const BUBBLE_VS = `
+  varying vec3 vN; varying vec3 vV; varying vec3 vP;
+  void main(){ vP = position; vN = normalize(normalMatrix * normal); vec4 mv = modelViewMatrix * vec4(position, 1.0); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }`;
+
+/* 白抜きシェーダー改善版：
+   1) 「高輝度かつ無彩色（低彩度）」だけを白背景と判定し、明るいクリーム色・黄色のおみくじ紙が透けるのを防ぐ
+   2) フチに出やすい白い輪郭のにじみ（白フリンジ）を軽減する */
+const KEY_FS = `
+  uniform sampler2D uMap;
+  uniform float uOpacity;
+  uniform float uGlow;
+  uniform float uMinWhite;
+  uniform float uMaxChroma;
+  varying vec2 vUv;
+  void main(){
+    vec4 c = texture2D(uMap, vUv);
+    float cMin = min(c.r, min(c.g, c.b));
+    float cMax = max(c.r, max(c.g, c.b));
+    float chroma = cMax - cMin;
+
+    // 明るくて無彩色に近いピクセルほど背景とみなす
+    float whiteMask = smoothstep(uMinWhite, min(0.99, uMinWhite + 0.08), cMin);
+    float grayMask  = 1.0 - smoothstep(uMaxChroma * 0.5, uMaxChroma, chroma);
+    float bg = whiteMask * grayMask;
+    float a = 1.0 - bg;
+
+    if (a < 0.02) discard;
+
+    // 半透明の境界に混ざった白背景の色かぶりを除去（白フリンジ軽減）
+    vec3 col = clamp((c.rgb - vec3(bg)) / max(a, 0.25), 0.0, 1.0);
+    gl_FragColor = vec4(col + uGlow, a * uOpacity);
+  }`;
+
+let omikujiTex = null;
+function omikujiVideoUrl() {
+  const v = document.createElement('video');
+  return (C.REVEAL.videoWebm && !v.canPlayType('video/mp4; codecs="avc1.42E01E"')) ? C.REVEAL.videoWebm : C.REVEAL.video;
+}
+function makeOmikujiCard(h) {
+  const vid = $('#omikujiVid');
+  if (!vid.src) vid.src = omikujiVideoUrl();
+  vid.play().catch(() => {});
+  if (!omikujiTex) {
+    omikujiTex = new THREE.VideoTexture(vid);
+    omikujiTex.minFilter = THREE.LinearFilter;
+    omikujiTex.colorSpace = THREE.SRGBColorSpace;
+  }
+  const getAspect = () => (vid.videoWidth && vid.videoHeight) ? (vid.videoWidth / vid.videoHeight) : (388 / 548);
+  const mat = new THREE.ShaderMaterial({
+    uniforms: {
+      uMap: { value: omikujiTex },
+      uOpacity: { value: 1 },
+      uGlow: { value: 0 },
+      uMinWhite: { value: C.REVEAL.keyMinWhite ?? 0.88 },
+      uMaxChroma: { value: C.REVEAL.keyMaxChroma ?? 0.10 }
+    },
+    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: KEY_FS, transparent: true, depthWrite: false, side: THREE.DoubleSide
   });
-  const flapTex = canvasTex(128, 64, (x, w, h) => { drawKraft(x, w, h); x.fillStyle = 'rgba(230,200,140,.6)'; x.fillRect(w * 0.4, 0, w * 0.2, h); });
-  const mk = (map) => new THREE.MeshLambertMaterial({ map });
-  const inside = new THREE.MeshBasicMaterial({ color: 0x3a2412 });
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(h * getAspect(), h), mat);
+  // 動画メタデータの読み込みが遅れた場合でも正しい縦横比へ自動補正
+  if (!vid.videoWidth) {
+    vid.addEventListener('loadedmetadata', () => {
+      m.geometry.dispose();
+      m.geometry = new THREE.PlaneGeometry(h * getAspect(), h);
+    }, { once: true });
+  }
+  m.renderOrder = 2;
+  return m;
+}
+
+function makeBubble() {
+  const R = 0.065;
   const root = new THREE.Group(), box = new THREE.Group(); root.add(box);
-  const bw = S, bh = S * 0.72, bd = S * 0.8;
-  // BoxGeometry の面の順：右, 左, 上, 下, 手前, 奥（上は開いた中身の色）
-  const body = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), [mk(kraft), mk(kraft), inside, mk(kraft), mk(front), mk(kraft)]);
-  body.position.y = bh / 2; box.add(body);
-  const flapMat = new THREE.MeshLambertMaterial({ map: flapTex, side: THREE.DoubleSide });
-  const flaps = [1, -1].map(s => {                                // 手前と奥のふた
-    const pivot = new THREE.Group(); pivot.position.set(0, bh, s * bd / 2); box.add(pivot);
-    const f = new THREE.Mesh(new THREE.PlaneGeometry(bw, bd / 2).rotateX(-Math.PI / 2), flapMat);
-    f.position.z = -s * bd / 4; pivot.add(f); pivot.userData.s = s; return pivot;
-  });
-  const glow = glowSprite(0xffe08a, S * 3, 0); glow.position.y = bh; box.add(glow);
-  // 中から出てくる、おみくじの巻紙
-  const scroll = new THREE.Group();
-  const paper = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.06, 12), new THREE.MeshLambertMaterial({ color: 0xfffdf6, emissive: 0x332a1a }));
-  const band = new THREE.Mesh(new THREE.CylinderGeometry(0.0118, 0.0118, 0.012, 12), new THREE.MeshBasicMaterial({ color: 0xe5322d }));
-  scroll.add(paper, band); scroll.position.y = bh * 0.5; scroll.visible = false; box.add(scroll);
-  const sparks = makePoints(36, { twinkle: 0.7, drift: 0.03 });
-  for (let i = 0; i < 36; i++) {
-    const a = Math.random() * 6.28, r = S * (0.8 + Math.random());
-    sparks.geometry.attributes.position.setXYZ(i, Math.cos(a) * r, Math.random() * S * 1.6, Math.sin(a) * r);
-    sparks.geometry.attributes.color.setXYZ(i, 1, 0.85, 0.45); sparks.geometry.attributes.size.setX(i, 0.008 + Math.random() * 0.01);
+  const mat = new THREE.ShaderMaterial({ uniforms: { uTime: U.uTime, uOpacity: { value: 1 } }, vertexShader: BUBBLE_VS, fragmentShader: BUBBLE_FS, transparent: true, depthWrite: false });
+  const shell = new THREE.Mesh(new THREE.SphereGeometry(R, 32, 20), mat); shell.position.y = R; shell.renderOrder = 3; box.add(shell);
+
+  const card = makeOmikujiCard(R * 1.9);
+  card.position.y = R; root.add(card);
+
+  const glow = glowSprite(0xffe08a, R * 3.2, 0.8); glow.position.y = R; box.add(glow);
+  const halo = glowSprite(0xffd27a, R * 6, 0.35); halo.position.y = R; root.add(halo);
+  const sparks = makePoints(30, { twinkle: 0.7, drift: 0.02 });
+  for (let i = 0; i < 30; i++) {
+    const a = Math.random() * 6.28, r = R * (1.3 + Math.random());
+    sparks.geometry.attributes.position.setXYZ(i, Math.cos(a) * r, Math.random() * R * 2.4, Math.sin(a) * r);
+    sparks.geometry.attributes.color.setXYZ(i, 1, 0.95, 0.75); sparks.geometry.attributes.size.setX(i, 0.006 + Math.random() * 0.008);
   }
   root.add(sparks);
-  const halo = glowSprite(0xffd27a, S * 5, 0.35); halo.position.y = bh / 2; root.add(halo);
-  root.userData = { box, flaps, glow, scroll, sparks, halo, S, bh, phase: 'none', t: 0 };
+
+  const N = 70, splash = makePoints(N, {}), splashV = new Float32Array(N * 3);
+  for (let i = 0; i < N; i++) {
+    const v = new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.3, Math.random() - 0.5).normalize().multiplyScalar(0.12 + Math.random() * 0.1);
+    splashV.set([v.x, v.y, v.z], i * 3); splash.geometry.attributes.color.setXYZ(i, 1, 0.97, 0.88);
+  }
+  splash.position.y = R; box.add(splash);
+  root.userData = { box, shell, card, glow, halo, sparks, splash, splashV, S: R * 2, phase: 'none', t: 0 };
   return root;
 }
 
-// 小包をトラックの荷台（またはグラス）から、目の前まで飛ばす
-function launchParcel(from) {
-  parcel = C.REVEAL.style === 'bubble' ? makeBubble() : makeParcel();
-  parcel.position.copy(from);
-  parcel.scale.setScalar(0.35);
+function launchBubble(from) {
+  bubbleObj = makeBubble();
+  bubbleObj.position.copy(from);
+  bubbleObj.scale.setScalar(0.35);
   const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
   const up = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
   const to = camera.position.clone().addScaledVector(fwd, 0.45).addScaledVector(up, -0.05);
-  const isBubble = parcel.userData.kind === 'bubble';
-  // 泡はグラスの真上へふわっと浮かんでから、ゆっくり目の前へ。小包は放物線で飛んでくる
-  const mid = isBubble ? from.clone().add(new THREE.Vector3(0, 0.22, 0)) : from.clone().lerp(to, 0.5).add(new THREE.Vector3(0, 0.2, 0));
-  Object.assign(parcel.userData, { phase: 'fly', t: 0, p0: from.clone(), p1: mid, p2: to, dur: isBubble ? 3.4 : 1.3 });
-  scene.add(parcel);
+  const mid = from.clone().add(new THREE.Vector3(0, 0.2, 0));
+  Object.assign(bubbleObj.userData, { phase: 'fly', t: 0, p0: from.clone(), p1: mid, p2: to, dur: 1.9 });
+  scene.add(bubbleObj);
 }
 
 const _q = {};
-function updateParcel(dt, time) {
-  if (!parcel) return;
-  const u = parcel.userData; u.t += dt;
+function updateBubble(dt, time) {
+  if (!bubbleObj) return;
+  const u = bubbleObj.userData; u.t += dt;
   u.halo.material.opacity = 0.3 + Math.sin(time * 3) * 0.1;
   u.sparks.rotation.y += dt * 0.8;
   if (!_q.m) { _q.m = new THREE.Matrix4(); _q.q = new THREE.Quaternion(); _q.up = new THREE.Vector3(0, 1, 0); }
-  // 箱の正面（伝票）がこちらを向くように
-  const face = () => { _q.m.lookAt(camera.position, parcel.position, _q.up); return _q.q.setFromRotationMatrix(_q.m); };
+  const face = () => { _q.m.lookAt(camera.position, bubbleObj.position, _q.up); return _q.q.setFromRotationMatrix(_q.m); };
 
-  if (u.card && !u.cardFree) u.card.quaternion.copy(camera.quaternion).premultiply(parcel.quaternion.clone().invert()); // おみくじは常にこちら向き
-  if (u.kind === 'bubble' && u.phase !== 'open') {                 // シャボン玉のように、ぷるぷるゆれる
+  if (u.card && !u.cardFree) u.card.quaternion.copy(camera.quaternion).premultiply(bubbleObj.quaternion.clone().invert());
+  if (u.phase !== 'open') {
     const w = Math.sin(u.t * 5.3) * 0.035;
     u.box.scale.set(1 + w, 1 - w, 1 + w);
   }
-  if (u.phase === 'fly') {               // ① 荷台／グラスから出て、目の前へ
+  if (u.phase === 'fly') {
     const k = Math.min(1, u.t / u.dur), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
     const a = u.p0.clone().lerp(u.p1, e), b = u.p1.clone().lerp(u.p2, e);
-    parcel.position.copy(a.lerp(b, e));
-    parcel.scale.setScalar(0.35 + 0.65 * Math.min(1, e * 1.4));
-    parcel.quaternion.copy(face());
-    if (u.kind === 'bubble') {
-      parcel.position.x += Math.sin(u.t * 2.1) * 0.012 * (1 - k);   // ふわふわ左右にゆらぎながら
-    } else {
-      u.box.rotation.y = (1 - e) * Math.PI * 3 + 0.45 * e;        // くるくる回りながら、最後は少し斜めに
-      u.box.rotation.x = 0.38 * e;                                 // ふたが見えるように少し手前に傾ける
+    bubbleObj.position.copy(a.lerp(b, e));
+    bubbleObj.scale.setScalar(0.35 + 0.65 * Math.min(1, e * 1.4));
+    bubbleObj.quaternion.copy(face());
+    bubbleObj.position.x += Math.sin(u.t * 2.1) * 0.012 * (1 - k);
+    if (k >= 1) {
+      u.phase = 'idle'; u.t = 0; u.base = bubbleObj.position.clone();
+      state.mode = 'waitTap';
+      setGuide('⛩️ 泡をタップして開こう！', 'もうすぐ自動で開くよ');
+      // 目の前で少し揺れたあと自動でパチン！と開く（タップすれば即開封）
+      scheduleDelivery(() => { if (state.mode === 'waitTap') openBubble(); }, 1200);
     }
-    if (k >= 1) { u.phase = 'idle'; u.t = 0; u.base = parcel.position.clone(); state.mode = 'waitTap'; onRevealReady(); }
-  } else if (u.phase === 'idle') {       // ② 目の前でふわふわ
-    parcel.position.y = u.base.y + Math.sin(u.t * 2.2) * 0.01;
-    parcel.quaternion.slerp(face(), 0.1);
-    u.box.rotation.z = Math.sin(u.t * 1.7) * 0.05 + Math.sin(u.t * 40) * 0.18 * shake.amp; // 振ると箱もゆれる
-    shake.amp *= Math.pow(0.02, dt);
-  } else if (u.phase === 'open' && u.kind === 'bubble') { // ③ 泡がぷくっとふくらんで「パチン！」→ おみくじが目の前に来て開く
+  } else if (u.phase === 'idle') {
+    bubbleObj.position.y = u.base.y + Math.sin(u.t * 2.2) * 0.01;
+    bubbleObj.quaternion.slerp(face(), 0.1);
+  } else if (u.phase === 'open') {
     const t = u.t;
-    if (t < 0.5) { const wob = 1 + t * 0.4 + Math.sin(t * 32) * 0.05; u.box.scale.set(wob, 2 - wob * 0.9 + 0.1, wob); }
-    if (t >= 0.5 && !u.popped) {
-      u.popped = true; u.shell.visible = false; u.cap.visible = false; u.halo.visible = false;
+    if (t < 0.45) { const wob = 1 + t * 0.42 + Math.sin(t * 32) * 0.05; u.box.scale.set(wob, 2 - wob * 0.9 + 0.1, wob); }
+    if (t >= 0.45 && !u.popped) {
+      u.popped = true; u.shell.visible = false; u.halo.visible = false;
+      SE.pop();
       const sp = u.splash.geometry.attributes;
       for (let i = 0; i < u.splashV.length / 3; i++) sp.size.setX(i, 0.006 + Math.random() * 0.01);
       sp.size.needsUpdate = true;
       if (navigator.vibrate) navigator.vibrate(40);
-      // おみくじを泡から取り出して、カメラの目の前へ
       u.cardFree = true;
       const wp = u.card.getWorldPosition(new THREE.Vector3());
-      parcel.remove(u.card); scene.add(u.card); u.card.position.copy(wp);
+      bubbleObj.remove(u.card); scene.add(u.card); u.card.position.copy(wp);
       const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
       u.cFrom = wp; u.cTo = camera.position.clone().addScaledVector(fwd, 0.24);
     }
     if (u.popped) {
-      const tt = t - 0.5;
-      const sp = u.splash.geometry.attributes.position;           // 泡のしぶき
+      const tt = t - 0.45;
+      const sp = u.splash.geometry.attributes.position;
       for (let i = 0; i < sp.count; i++) sp.setXYZ(i, u.splashV[i * 3] * tt * (1 - tt * 0.4), u.splashV[i * 3 + 1] * tt - 0.15 * tt * tt, u.splashV[i * 3 + 2] * tt * (1 - tt * 0.4));
       sp.needsUpdate = true;
       u.glow.material.opacity = Math.max(0, 0.95 - tt);
-      const k = Math.min(1, tt / 0.9), e = 1 - Math.pow(1 - k, 3);
+      const k = Math.min(1, tt / 0.85), e = 1 - Math.pow(1 - k, 3);
       u.card.position.lerpVectors(u.cFrom, u.cTo, e);
       u.card.quaternion.copy(camera.quaternion);
       const sc = 1 + e * 0.35;
-      // ひらく：ふわっと近づいたあと、紙がほどけるように横に広がって光る
-      const o = THREE.MathUtils.clamp((tt - 0.9) / 0.5, 0, 1);
+      const o = THREE.MathUtils.clamp((tt - 0.85) / 0.45, 0, 1);
       u.card.scale.set(sc * (1 + o * 0.6), sc * (1 - o * 0.85), 1);
       u.card.rotation.z += Math.sin(tt * 9) * 0.004 * (1 - o);
       u.card.material.uniforms.uGlow.value = o * 0.9;
@@ -2296,180 +1824,30 @@ function updateParcel(dt, time) {
       }
       if (o >= 1 && state.mode === 'opening') { state.mode = 'result'; scene.remove(u.card); showResult(); }
     }
-  } else if (u.phase === 'open') {       // ③ タップ：ガタガタ → ふたが開く → 巻紙が光って出てくる
-    const t = u.t;
-    u.box.rotation.z = t < 0.5 ? Math.sin(t * 50) * 0.12 * (t / 0.5) : 0;
-    const k = THREE.MathUtils.clamp((t - 0.5) / 0.4, 0, 1), e = 1 - Math.pow(1 - k, 3);
-    u.flaps.forEach(f => (f.rotation.x = f.userData.s * 2.1 * e));
-    u.glow.material.opacity = e * 0.95; u.glow.scale.setScalar(u.S * (3 + e * 2));
-    if (t > 0.75) {
-      u.scroll.visible = true;
-      const r = THREE.MathUtils.clamp((t - 0.75) / 0.6, 0, 1);
-      u.scroll.position.y = u.bh * 0.5 + r * 0.09; u.scroll.rotation.y += dt * 6;
-    }
-    if (t > 1.3 && !u.burst) {
-      u.burst = true;
-      $('#flash').classList.remove('on'); void $('#flash').offsetWidth; $('#flash').classList.add('on');
-      if (navigator.vibrate) navigator.vibrate([60, 30, 120]);
-    }
-    if (t > 1.6 && state.mode === 'opening') { state.mode = 'result'; showResult(); }
   }
 }
 
 function clearParcel() {
-  if (parcel) { scene.remove(parcel); parcel = null; }
-  if (foam) { scene.remove(foam); foam = null; }
-  $('#shakeUI').classList.add('hidden');
-  $('#tapLabel').classList.add('hidden'); $('#dirHint').classList.add('hidden');
+  clearDeliveryTimers();
+  if (bubbleObj) {
+    if (bubbleObj.userData && bubbleObj.userData.card) scene.remove(bubbleObj.userData.card);
+    scene.remove(bubbleObj);
+    bubbleObj = null;
+  }
+  while (fireworks.length) {
+    const f = fireworks.pop();
+    scene.remove(f.p, f.flash);
+    f.p.geometry.dispose(); f.p.material.dispose();
+  }
+  $('#flash').classList.remove('on');
+  $('#drawBtn').classList.add('hidden');
+  $('#tapLabel').classList.add('hidden');
+  $('#dirHint').classList.add('hidden');
 }
 
-
-/* ---- 案B：泡のカプセル（グラスの泡がふくらんで、おみくじ入りの泡玉が出てくる） ---- */
-const BUBBLE_FS = `
-  uniform float uTime; uniform float uOpacity;
-  varying vec3 vN; varying vec3 vV; varying vec3 vP;
-  void main(){
-    vec3 n = normalize(vN);
-    float fres = pow(1.0 - abs(dot(n, normalize(vV))), 1.6);
-    vec3 film = 0.5 + 0.5 * cos(6.2832 * (fres * 1.4 + vP.y * 8.0 + uTime * 0.15 + vec3(0.0, 0.33, 0.67))); // シャボン玉の虹色
-    vec3 col = mix(vec3(1.0, 0.86, 0.45), film, 0.45) * (0.35 + fres * 1.2);
-    col += pow(max(0.0, dot(n, normalize(vec3(-0.4, 0.6, 0.7)))), 40.0) * 1.5;           // つやの光
-    gl_FragColor = vec4(col, (0.12 + fres * 0.8) * uOpacity);
-  }`;
-const BUBBLE_VS = `
-  varying vec3 vN; varying vec3 vV; varying vec3 vP;
-  void main(){ vP = position; vN = normalize(normalMatrix * normal); vec4 mv = modelViewMatrix * vec4(position, 1.0); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }`;
-// おみくじの動画を、白い背景をぬいて板に貼る
-const KEY_FS = `
-  uniform sampler2D uMap; uniform float uOpacity; uniform float uGlow;
-  varying vec2 vUv;
-  void main(){
-    vec4 c = texture2D(uMap, vUv);
-    float m = min(c.r, min(c.g, c.b));
-    float a = 1.0 - smoothstep(0.90, 0.975, m);          // 白い背景 → 透明
-    gl_FragColor = vec4(c.rgb + uGlow, a * uOpacity);
-  }`;
-let omikujiTex = null;
-function omikujiVideoUrl() { // MP4 が再生できない環境では WebM を使う
-  const v = document.createElement('video');
-  return (C.REVEAL.videoWebm && !v.canPlayType('video/mp4; codecs="avc1.42E01E"')) ? C.REVEAL.videoWebm : C.REVEAL.video;
-}
-function makeOmikujiCard(h) {
-  const vid = $('#omikujiVid');
-  if (!vid.src) vid.src = omikujiVideoUrl();
-  vid.play().catch(() => {});
-  if (!omikujiTex) { omikujiTex = new THREE.VideoTexture(vid); omikujiTex.minFilter = THREE.LinearFilter; }
-  const aspect = (vid.videoWidth || 388) / (vid.videoHeight || 548);
-  const mat = new THREE.ShaderMaterial({ uniforms: { uMap: { value: omikujiTex }, uOpacity: { value: 1 }, uGlow: { value: 0 } },
-    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-    fragmentShader: KEY_FS, transparent: true, depthWrite: false, side: THREE.DoubleSide });
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(h * aspect, h), mat);
-  m.renderOrder = 2;
-  return m;
-}
-function makeBubble() {
-  const R = 0.065;
-  const root = new THREE.Group(), box = new THREE.Group(); root.add(box);
-  const mat = new THREE.ShaderMaterial({ uniforms: { uTime: U.uTime, uOpacity: { value: 1 } }, vertexShader: BUBBLE_VS, fragmentShader: BUBBLE_FS, transparent: true, depthWrite: false });
-  const shell = new THREE.Mesh(new THREE.SphereGeometry(R, 32, 20), mat); shell.position.y = R; shell.renderOrder = 3; box.add(shell);
-  // てっぺんの白い泡（ビールの泡のフタ）
-  const cap = new THREE.Group();
-  [[0, 0, 0, 0.022], [0.018, -0.004, 0.006, 0.016], [-0.017, -0.003, -0.004, 0.017], [0.004, -0.004, 0.018, 0.014], [-0.004, -0.003, -0.017, 0.015]].forEach(([x, y, z, r]) => {
-    const m = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 8), new THREE.MeshLambertMaterial({ color: 0xfffaf0, emissive: 0x2a2418 })); m.position.set(x, y, z); cap.add(m);
-  });
-  cap.position.y = R * 2 - 0.006; cap.visible = false; box.add(cap); // 泡のフタは付けない
-  // 中に浮かぶ、おみくじ（動画）。いつもこちらを向く板に貼る
-  const card = makeOmikujiCard(R * 1.9);
-  card.position.y = R; root.add(card);
-  const glow = glowSprite(0xffe08a, R * 3.2, 0.8); glow.position.y = R; box.add(glow);
-  const halo = glowSprite(0xffd27a, R * 6, 0.35); halo.position.y = R; root.add(halo);
-  const sparks = makePoints(30, { twinkle: 0.7, drift: 0.02 });
-  for (let i = 0; i < 30; i++) {
-    const a = Math.random() * 6.28, r = R * (1.3 + Math.random());
-    sparks.geometry.attributes.position.setXYZ(i, Math.cos(a) * r, Math.random() * R * 2.4, Math.sin(a) * r);
-    sparks.geometry.attributes.color.setXYZ(i, 1, 0.95, 0.75); sparks.geometry.attributes.size.setX(i, 0.006 + Math.random() * 0.008);
-  }
-  root.add(sparks);
-  // はじけたときのしぶき
-  const N = 70, splash = makePoints(N, {}), splashV = new Float32Array(N * 3);
-  for (let i = 0; i < N; i++) {
-    const v = new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.3, Math.random() - 0.5).normalize().multiplyScalar(0.12 + Math.random() * 0.1);
-    splashV.set([v.x, v.y, v.z], i * 3); splash.geometry.attributes.color.setXYZ(i, 1, 0.97, 0.88);
-  }
-  splash.position.y = R; box.add(splash);
-  root.userData = { kind: 'bubble', box, shell, cap, card, glow, halo, sparks, splash, splashV, mat, S: R * 2, bh: R * 2, phase: 'none', t: 0 };
-  return root;
-}
-
-// グラスの上で泡がもこもこふくらみ、カプセルが飛び出す
-let foam = null;
-function startFoam(at) {
-  if (foam) scene.remove(foam);
-  foam = new THREE.Group(); foam.position.copy(at);
-  const mat = new THREE.MeshLambertMaterial({ color: 0xfffaf0, emissive: 0x2a2418 });
-  for (let i = 0; i < 14; i++) {
-    const m = new THREE.Mesh(new THREE.SphereGeometry(0.012 + Math.random() * 0.012, 10, 8), mat);
-    const a = Math.random() * 6.28, r = Math.random() * 0.035;
-    m.position.set(Math.cos(a) * r, Math.random() * 0.03, Math.sin(a) * r); m.scale.setScalar(0.01);
-    m.userData.d = Math.random() * 0.5; foam.add(m);
-  }
-  foam.userData.t = 0;
-  scene.add(foam);
-  setGuide('🍺 グラスの泡がふくらんできた…！');
-  if (navigator.vibrate) navigator.vibrate(30);
-}
-function updateFoam(dt) {
-  if (!foam) return;
-  const u = foam.userData; u.t += dt;
-  foam.children.forEach(m => {
-    const k = THREE.MathUtils.clamp((u.t - m.userData.d) / 0.8, 0, 1);
-    const shrink = u.t > 2.2 ? Math.max(0, 1 - (u.t - 2.2) / 0.8) : 1;
-    m.scale.setScalar(Math.max(0.01, easeOutBack(k) * shrink));
-    m.position.y += dt * 0.012 * shrink;
-  });
-  if (u.t > 1.6 && !u.launched) { u.launched = true; launchParcel(foam.position.clone().add(new THREE.Vector3(0, 0.03, 0))); setGuide('🫧 おみくじの入った泡が、ふわっと…！'); }
-  if (u.t > 3.2) { scene.remove(foam); foam = null; }
-}
 const easeOutBack = (x) => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
 
-/* ---- 案D：スマホを振って「乾杯！」で開ける ---- */
-const shake = { power: 0, amp: 0, last: null, listening: false, tapOK: true, gotEvent: false };
-function onRevealReady() {
-  const isBubble = parcel.userData.kind === 'bubble';
-  if (C.REVEAL.open !== 'shake') {
-    $('#tapLabel').textContent = isBubble ? 'タップして割ってね！' : 'タップして開けてね！';
-    setGuide(isBubble ? '🫧 泡をタップして割ってね！' : '📦 小包をタップして開けてね！', isBubble ? '中のおみくじが開くよ' : '中身は今日の運勢…！');
-    return;
-  }
-  // 振って開けるモード
-  shake.power = 0; shake.tapOK = false; $('#shakeBar').style.width = '0%';
-  $('#shakeUI').classList.remove('hidden');
-  $('#shakeNote').textContent = '乾杯パワーがたまると開くよ';
-  $('#tapLabel').textContent = 'タップでもOK！';
-  setGuide(isBubble ? '🫧 泡のカプセルが届いたよ！' : '📦 小包が届いたよ！', 'スマホを振って乾杯すると開くよ');
-  if (!shake.listening) { shake.listening = true; addEventListener('devicemotion', onMotion); }
-  // センサーが使えない端末や、うまく振れない人のために、少したったらタップでも開けられるように
-  setTimeout(() => { if (state.mode === 'waitTap') { shake.tapOK = true; $('#shakeNote').textContent = shake.gotEvent ? 'うまく振れないときはタップでもOK' : 'このスマホでは振る操作が使えないので、タップで開けてね'; } }, shake.gotEvent ? 6000 : 2500);
-}
-function onMotion(e) {
-  const a = e.accelerationIncludingGravity || e.acceleration;
-  if (!a || a.x == null) return;
-  shake.gotEvent = true;
-  if (state.mode !== 'waitTap' || C.REVEAL.open !== 'shake') { shake.last = null; return; }
-  if (shake.last) {
-    const d = Math.hypot(a.x - shake.last.x, a.y - shake.last.y, a.z - shake.last.z); // ゆれの大きさ
-    if (d > 4) {
-      shake.power += (d - 4) * 0.003 / Math.max(0.2, C.REVEAL.shakePower); // 強めに1秒ほど振ると満タン
-      shake.amp = Math.min(1, shake.amp + d * 0.03);
-      $('#shakeBar').style.width = Math.min(100, shake.power * 100) + '%';
-      if (navigator.vibrate && d > 12) navigator.vibrate(15);
-      if (shake.power >= 1) openParcel();
-    }
-  }
-  shake.last = { x: a.x, y: a.y, z: a.z };
-}
-
-/* ---- 花火（小包を開けたとき） ---- */
+/* ---- 花火 ---- */
 const FW_VS = `
   attribute vec3 vel; attribute vec3 color;
   uniform float uT; uniform float uScale;
@@ -2490,7 +1868,7 @@ function launchFireworks(count) {
   const yaw = Math.atan2(fwd.z, fwd.x);
   const palette = ['#ffc53d', '#e5322d', '#6fd6ff', '#ff8ad0', '#ffffff', '#ffe08a'];
   for (let i = 0; i < count; i++) {
-    setTimeout(() => {
+    scheduleDelivery(() => {
       const a = yaw + (Math.random() - 0.5) * 1.1, d = 7 + Math.random() * 1.5;
       const origin = new THREE.Vector3(Math.cos(a) * d, 2.5 + Math.random() * 2, Math.sin(a) * d);
       const N = 110, geo = new THREE.BufferGeometry();
@@ -2521,19 +1899,21 @@ function updateFireworks(dt) {
   }
 }
 
-/* 「タップして開けてね」ラベル位置／画面外にあるときは方向を案内 */
+/* ---- ラベル位置・方向案内 ---- */
 function updateLabels() {
   const label = $('#tapLabel'), hint = $('#dirHint');
   let target = null, name = '';
-  if (parcel && (state.mode === 'waitTap' || state.mode === 'delivering')) { target = parcel.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, parcel.userData.S * parcel.scale.y * 1.1, 0)); name = parcel.userData.kind === 'bubble' ? 'おみくじの泡' : '小包'; }
-  else if (truck && state.mode === 'delivering') { target = truck.sprite.position.clone(); name = 'トラック'; }
+  if (bubbleObj && (state.mode === 'waitTap' || state.mode === 'delivering')) {
+    target = bubbleObj.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, bubbleObj.userData.S * bubbleObj.scale.y * 1.1, 0));
+    name = 'おみくじの泡';
+  }
   if (!target) { label.classList.add('hidden'); hint.classList.add('hidden'); return; }
   const local = target.clone().applyMatrix4(camera.matrixWorldInverse);
   const p = target.clone().project(camera);
   const onScreen = local.z < 0 && Math.abs(p.x) < 0.92 && Math.abs(p.y) < 0.92;
   if (onScreen) {
     hint.classList.add('hidden');
-    if (state.mode === 'waitTap' && !(C.REVEAL.open === 'shake' && !shake.tapOK)) {
+    if (state.mode === 'waitTap') {
       label.style.left = ((p.x + 1) / 2 * innerWidth) + 'px';
       label.style.top = ((1 - p.y) / 2 * innerHeight) + 'px';
       label.classList.remove('hidden');
@@ -2548,19 +1928,18 @@ function updateLabels() {
 }
 
 /* ---------------------------------------------------------------
-   操作：傾きセンサー／ドラッグで見回す、タップで小包を開ける
+   操作（傾きセンサー／ドラッグ／タップ）
    --------------------------------------------------------------- */
 const orient = { has: false, alpha: 0, beta: 90, gamma: 0, offset: null };
-let dragYaw = 0, dragPitch = -0.3; // センサーが無いときの初期の向き（少し下＝テーブルを見る）
+let dragYaw = 0, dragPitch = -0.3;
 function setupOrientation(sensorOK) {
   if (sensorOK) {
     addEventListener('deviceorientation', (e) => {
       if (e.alpha == null) return;
-      if (orient.offset == null) orient.offset = e.alpha; // 最初に向いていた方向を「正面」にする
+      if (orient.offset == null) orient.offset = e.alpha;
       orient.has = true; orient.alpha = e.alpha; orient.beta = e.beta; orient.gamma = e.gamma;
     });
   }
-  // 1.5秒たってもセンサー値が来なければドラッグ操作モード
   setTimeout(() => { if (!orient.has && !(state.mode === 'searching' && state.camOK)) setStatus('画面をドラッグして見回せます'); }, 1500);
 }
 
@@ -2575,7 +1954,7 @@ function orientationQuaternion() {
   const screenAngle = deg((screen.orientation && screen.orientation.angle) || window.orientation || 0);
   _o.e.set(beta, alpha, -gamma, 'YXZ');
   _o.q.setFromEuler(_o.e).multiply(_o.q1).multiply(_o.qz.setFromAxisAngle(_o.z, -screenAngle));
-  _o.qy.setFromAxisAngle(_o.y, dragYaw); // ドラッグでの左右補正
+  _o.qy.setFromAxisAngle(_o.y, dragYaw);
   return _o.qy.multiply(_o.q);
 }
 
@@ -2592,23 +1971,24 @@ function setupPointer() {
   });
   el.addEventListener('pointerup', (e) => { down = false; if (!moved) onTap(e.clientX, e.clientY); });
   el.addEventListener('pointercancel', () => { down = false; });
-  $('#tapLabel').addEventListener('click', () => openParcel());
+  $('#tapLabel').addEventListener('click', () => openBubble());
 }
 
 function onTap(x, y) {
-  if (state.mode !== 'waitTap' || !parcel) return;
-  if (C.REVEAL.open === 'shake' && !shake.tapOK) return;
-  const p = parcel.getWorldPosition(new THREE.Vector3()).project(camera);
+  if (state.mode === 'readyDraw') { drawBubbleOmikuji(); return; }
+  if (state.mode !== 'waitTap' || !bubbleObj) return;
+  const p = bubbleObj.getWorldPosition(new THREE.Vector3()).project(camera);
   const px = (p.x + 1) / 2 * innerWidth, py = (1 - p.y) / 2 * innerHeight;
-  if (Math.hypot(x - px, y - py) < Math.max(110, innerWidth * 0.28)) openParcel();
+  if (Math.hypot(x - px, y - py) < Math.max(110, innerWidth * 0.28)) openBubble();
 }
 
-function openParcel() {
-  if (state.mode !== 'waitTap' || !parcel) return;
+function openBubble() {
+  if (state.mode !== 'waitTap' || !bubbleObj) return;
+  clearDeliveryTimers();
   state.mode = 'opening';
-  parcel.userData.phase = 'open'; parcel.userData.t = 0;
-  $('#tapLabel').classList.add('hidden'); $('#shakeUI').classList.add('hidden');
-  setGuide(parcel.userData.kind === 'bubble' ? 'ぷくぷく……パチン！' : (C.REVEAL.open === 'shake' ? '🍻 カンパーイ！' : 'ガサガサ……パカッ！'));
+  bubbleObj.userData.phase = 'open'; bubbleObj.userData.t = 0;
+  $('#tapLabel').classList.add('hidden');
+  setGuide('⛩️ 御神籤、開封……パチン！');
 }
 
 /* ---------------------------------------------------------------
@@ -2623,7 +2003,6 @@ function loop(now) {
   const dt = Math.min(0.05, clock.getDelta()), time = clock.elapsedTime;
   U.uTime.value = time;
 
-  // カメラの向き（センサー or ドラッグ）
   if (!camTarget.q) { camTarget.q = new THREE.Quaternion(); camTarget.e = new THREE.Euler(0, 0, 0, 'YXZ'); }
   if (orient.has) camTarget.q.copy(orientationQuaternion());
   else camTarget.q.setFromEuler(camTarget.e.set(dragPitch, dragYaw, 0, 'YXZ'));
@@ -2632,44 +2011,45 @@ function loop(now) {
 
   if (state.mode === 'searching') runDetection(now);
   updateTruck(dt);
-  updateParcel(dt, time);
-  updateFoam(dt);
+  updateBubble(dt, time);
   updateDiorama(dt);
   updateRoomMovers(dt, time);
   updateFoamClouds(time, dt);
-  updateRouteArrows(dt);
   updateFireworks(dt);
   updateLabels();
   renderer.render(scene, camera);
 }
 
 /* ---------------------------------------------------------------
-   5. 結果
+   3. 結果・ひと言感想
    --------------------------------------------------------------- */
 function showResult() {
   const f = state.fortune || drawFortune();
   const S = C.SEASONS[state.season];
   state.mode = 'result';
   $('#guide').classList.add('hidden');
-  // アニメーションをやり直すため要素を差し替え
+
   const slip = $('#slip'); const clone = slip.cloneNode(true); slip.replaceWith(clone);
-  $('#rSeason').innerHTML = `${S.jp}の速達便<br>${C.SHOP.name}`;
+  $('#rSeason').innerHTML = `${S.jp}の奉納便<br>${C.SHOP.name}`;
   $('#rRank').textContent = f.rank;
   $('#rMsg').textContent = f.message;
+  $('#rSakeLuck').textContent = f.sakeLuck || '最高の一杯が運気を運ぶ';
+  $('#rWish').textContent = f.wish || '乾杯とともに叶う';
+  $('#rLucky').textContent = f.lucky || '笑顔でもう一口';
   $('#rDishName').textContent = f.dish.name;
   $('#rDishDesc').textContent = f.dish.desc;
   const img = $('#rDishImg');
   img.innerHTML = '';
   if (f.dish.image) { const im = new Image(); im.src = f.dish.image; im.alt = f.dish.name; img.appendChild(im); }
   else img.textContent = f.dish.emoji || '🍽️';
+
   $('#result').classList.add('active');
   $('#result').scrollTop = 0;
-  if (state.revealed) { revealFortune(false); return; } // 2回目以降はすぐ運勢を表示
+  if (state.revealed) { revealFortune(false); return; }
   $('#result').classList.remove('done');
   $('#commentCard').classList.remove('hidden');
 }
 
-/* ひと言アンケート（おみくじを開けたあと、運勢の前） */
 (function buildQuickChips() {
   const box = $('#quickChips');
   C.SURVEY.quickComments.forEach(t => {
@@ -2683,28 +2063,33 @@ function showResult() {
   });
   $('#q4').maxLength = C.SURVEY.commentMaxLength;
 })();
+
 $('#commentBtn').onclick = () => {
   const c = $('#q4').value.trim().slice(0, C.SURVEY.commentMaxLength);
   if (C.SURVEY.commentRequired && !c) { $('#commentErr').textContent = 'ひと言だけ入れてね（上のボタンでもOK）'; return; }
   state.answers.comment = c;
-  sendAnswers();          // ここでアンケートをまとめて送信
+  sendAnswers();
   revealFortune(true);
 };
+
 function revealFortune(celebrate) {
   state.revealed = true;
   $('#commentCard').classList.add('hidden');
   $('#slip').classList.add('revealed');
   $('#result').classList.add('done');
   if (celebrate) {
+    SE.taiko(state.fortune && state.fortune.rank === '大吉');
     $('#flash').classList.remove('on'); void $('#flash').offsetWidth; $('#flash').classList.add('on');
     if (renderer) launchFireworks(state.fortune.fireworks || 3);
   }
 }
 
-// 「もう一度見る」：同じ運勢のまま、演出をもう一度
 $('#againBtn').onclick = () => {
   $('#result').classList.remove('active');
   if (!renderer || !glassPos) { showResult(); return; }
+  const v = $('#omikujiVid');
+  if (v && v.src) { v.currentTime = 0; v.play().catch(() => {}); }
+  clearParcel();
   startDelivery();
 };
 </script>
