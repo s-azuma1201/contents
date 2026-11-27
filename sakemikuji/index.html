@@ -128,19 +128,79 @@ window.APP_CONFIG = {
      slots  … どの名所を、どの方向(deg: 0=最初の正面, 90=右, 180=うしろ, -90=左)に置くか
               spot は fuji / kyoto / tsumago / shirakawa / okazaki / tokyo / yokohama / nagoya / tg / izakaya
               road は画像の中の道路の高さ（上から0〜1）。ここが床の高さにそろいます
-     画像は dir + spot + "_" + 季節 + ".webp"（例：izakaya_aki.webp）
+     画像は dir + spot + "_" + 季節 + ".webp"（例：izakaya_aki.webp）。季節のない写真は img に直接ファイル名を書く
+     sign … その方向の空に出る看板（{shop} は店名に置き換わります）。type は "start" / "via" / "goal"
+     route … 「出発」から「到着」へ、道路の上を光の矢印が流れる（速達生の鮮度ルート）
   */
   SCENERY: {
-    mode: "surround",
+    mode: "none",          // ← 背景の景色は使わない（お店の中がそのまま見える）。"surround" で景色ありに戻せます
     dir: "image/",          // 景色の画像を置くフォルダ（index.html と同じ場所の image フォルダ）
+    // 背景②「速達生の旅路」：うしろ＝出発（物流センター）→ 左右＝道中 → 正面＝到着（このお店）
     slots: [
-      { spot: "izakaya", deg: 0,   road: 0.88 },
-      { spot: "nagoya",  deg: 90,  road: 0.85 },
-      { spot: "fuji",    deg: 180, road: 0.92 },
-      { spot: "kyoto",   deg: -90, road: 0.90 }
+      { spot: "izakaya", deg: 0,   road: 0.88, sign: { type: "goal",  text: "到着｜{shop}" } },
+      { spot: "nagoya",  deg: 90,  road: 0.85, sign: { type: "via",   text: "名古屋 経由" } },
+      { img: "image/maruto_soko.webp", deg: 180, road: 0.86, sign: { type: "start", text: "出発｜速達生 物流センター" } },
+      { spot: "fuji",    deg: -90, road: 0.92, sign: { type: "via",   text: "富士山 経由" } }
     ],
+    route: true,
     arOpacity: 0.92,   // カメラ画面での景色の濃さ（0〜1）
     particles: 140     // 舞うものの数（減らすと軽くなる）
+  },
+
+  /* ---------- お店の中を360°動きまわる演出 ----------
+     背景を使わないかわりに、店内のどこを見ても何かが動いているようにします */
+  ROOM: {
+    blimp: true,            // 「速達生」の飛行船が、天井近くをゆっくり一周
+    blimpText: "",           // 飛行船に入れる文字（"" で文字なし）
+    bannerText: "",          // 飛行船がひっぱる旗の文字（"" で旗なし）
+    blimpImage: "blimp_beer.webp", // ビールデザインの飛行船（いただいたイラストを黄色＋泡で塗り直したもの）。"" で図形の仮素材
+    balloons: 7,            // ジョッキの気球の数（0で無し）。スマホの縦画面は横の視野がせまいので多めに
+    // Canva で生成した画像素材（image フォルダ）。空 "" にすると図形の仮素材に戻ります
+    balloonImage: "balloon_photo.webp",
+    birds: 4,      birdImage: "bird_photo.webp",     // 店内を飛ぶ鶴
+    bottles: 4,    bottleImage: "bottle_photo.webp", // ふわふわ浮かぶ一升瓶
+    planet: true,  planetImage: "planet_photo.webp", // 天井近くに浮かぶビールの惑星
+    foamClouds: 8                                    // 背景のビール泡雲の数（0で無し）
+  },
+
+  /* ---------- 卓上ジオラマ（卓上A）----------
+     グラスが見つかると、テーブルの上に道路が現れ、名古屋城・物流センター・お店の並びが立ち上がります（地面の台はなし）。
+     1台目の速達トラックは物流センターで樽を積んでお店に届け（くり返し）、2台目は反対車線を走ります。
+  */
+  DIORAMA: {
+    enabled: true,
+    baseRadius: 0.25,      // ジオラマの台の半径(m)
+    roadRadius: 0.085,     // 道路のカーブの半径(m)。道路は「横に長い楕円（陸上トラック形）」でグラスを囲みます
+    roadStraight: 0.08,    // 道路のまっすぐな部分の半分の長さ(m)。建物はこの直線に沿って横に並びます
+    truckLength: 0.075,    // ジオラマ用のトラックの長さ(m)
+    speed: 0.1,            // トラックの速さ(m/秒)
+    trucks: 2,             // 走るトラックの台数（1 か 2）
+    landmark: "名古屋城",   // うしろに立つ名所（いまは名古屋城のみ。"" で無し）
+    shrine: true,          // 神社（拝殿・おみくじ掛け）と、道路をまたぐ大きな鳥居
+    shrineName: "速達生神社", // 神社の名前（拝殿の扁額）
+    // 素材の差し替え：イラスト画像（背景透明の PNG / WebP）を image フォルダに入れてファイル名を書くと、
+    // 図形で作った建物の代わりにその画像が立ちます。height は高さ(m)。空 "" のあいだは図形の仮素材を表示
+    assets: {
+      // ※高画質版に差し替え済み：鳥居・神社・物流倉庫・惑星・居酒屋・名古屋城・茶屋・甘味処・気球。残り（土産物屋・酒屋・鶴・一升瓶）は小さいプレビュー
+      // height＝高さ(m)。大きく見せたい城・神社・鳥居・物流倉庫は大きめ、お店は小さめにして差をつけています
+      castle:    { file: "castle_photo.webp",    height: 0.18 },  // 名古屋城（いちばん大きく）
+      shrine:    { file: "shrine_photo.webp",    height: 0.085 }, // 速達生神社（おみくじ掛けつき）
+      torii:     { file: "torii_photo.webp",     height: 0.105 }, // （大鳥居は道路をまたぐため立体で表示。この画像はプレビュー用）
+      warehouse: { file: "warehouse_photo.webp", height: 0.07 },  // 物流倉庫
+      shop:      { file: "izakaya_photo.webp",   height: 0.06 },  // 配達先の和の居酒屋
+      street:    ["chaya_photo.webp", "kanmi_photo.webp", "miyage_photo.webp", "sakaya_photo.webp"] // 門前町のお店（茶屋・甘味処・土産物屋・酒屋）
+    },
+    shopHeight: 0.048,     // 並びのお店（茶屋・甘味処・土産物屋・酒屋）の高さ(m)
+    toriiHeight: 0.11,     // 道路をまたぐ大鳥居の高さ(m)
+    // 道ぞいに並ぶお店（name=看板, wall=壁, roof=屋根, noren=のれん の色）
+    street: [
+      { name: "茶屋",     wall: "#5a3a22", roof: "#2f3036", noren: "#1d2a5a" },
+      { name: "甘味処",   wall: "#e9d3b0", roof: "#2b2b30", noren: "#fffaf0" },
+      { name: "土産物",   wall: "#6a4426", roof: "#2f3036", noren: "#8a2433" },
+      { name: "酒屋",     wall: "#5a3a22", roof: "#2b2b30", noren: "#1d2a5a" }
+    ],
+    warehouseName: "速達生",               // 物流センターの看板
+    loadText: "積み込み中…", departText: "出発！", deliverText: "お届け！鮮度◎"
   },
 
   /* ---------- おみくじの出し方 ----------
@@ -516,6 +576,10 @@ textarea::placeholder{color:rgba(255,255,255,.4)}
    ===================================================================== */
 const C = window.APP_CONFIG;
 const $ = (s) => document.querySelector(s);
+// 古いiPhone（iOS15以前）向け：角丸の四角を描く関数がない場合の代わり
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) { this.moveTo(x + r, y); this.arcTo(x + w, y, x + w, y + h, r); this.arcTo(x + w, y + h, x, y + h, r); this.arcTo(x, y + h, x, y, r); this.arcTo(x, y, x + w, y, r); this.closePath(); return this; };
+}
 const TABLE_ID = new URLSearchParams(location.search).get('table') || '';
 
 // three.js は先読み（読めなかった場合もアンケート〜結果までは動く）
@@ -525,6 +589,7 @@ const threeReady = import(C.THREE_URL).then(m => (THREE = m)).catch(e => { conso
 const SEASON_KEYS = ['haru', 'natsu', 'aki', 'fuyu'];
 const NOW_SEASON = (() => { const m = new Date().getMonth() + 1; return m >= 3 && m <= 5 ? 'haru' : m >= 6 && m <= 8 ? 'natsu' : m >= 9 && m <= 11 ? 'aki' : 'fuyu'; })();
 const sceneryUrl = (spot, k) => `${C.SCENERY.dir}${spot}_${k}.webp`;
+const slotUrl = (slot, k) => slot.img ? slot.img : sceneryUrl(slot.spot, k);
 
 const state = {
   ageOK: false,
@@ -564,7 +629,7 @@ function applySeason(k) {
     fx.appendChild(p);
   }
   // 景色画像を先読み
-  C.SCENERY.slots.forEach(s => { const im = new Image(); im.src = sceneryUrl(s.spot, k); });
+  C.SCENERY.slots.forEach(s => { const im = new Image(); im.src = slotUrl(s, k); });
 }
 (function buildSeasonCards() {
   const row = $('#seasonRow');
@@ -595,6 +660,47 @@ truckReady.then(ok => {
   if (!ok) { $('#heroTruck').classList.add('hidden'); return; }
   const cv = $('#heroTruck'), r = truckFacingRight(truckImg);
   cv.width = r.width; cv.height = r.height; cv.getContext('2d').drawImage(r, 0, 0);
+});
+
+
+/* =====================================================================
+   素材プレビュー：index.html?preview=izakaya のように開くと、その素材だけを回して見られます
+   （素材のデザインを確認・すり合わせする用。お客さんの画面には出ません）
+   ===================================================================== */
+const PREVIEW_ASSETS = { izakaya: () => makeIzakaya() };
+const PREVIEW = new URLSearchParams(location.search).get('preview');
+if (PREVIEW) threeReady.then(() => {
+  const make = PREVIEW_ASSETS[PREVIEW]; if (!make) { alert('プレビューできる素材: ' + Object.keys(PREVIEW_ASSETS).join(', ')); return; }
+  document.querySelectorAll('.screen,#fx,#pageBg').forEach(e => e.classList.add('hidden'));
+  const ar = $('#arScreen'); ar.classList.remove('hidden'); ar.classList.add('active', 'nocam'); video.classList.add('hidden');
+  $('.ar-ui').classList.add('hidden');
+  renderer = new THREE.WebGLRenderer({ canvas: $('#gl'), antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.setSize(innerWidth, innerHeight, false);
+  scene = new THREE.Scene();
+  scene.background = canvasTex(4, 256, (x) => { const g = x.createLinearGradient(0, 0, 0, 256); g.addColorStop(0, '#1b2140'); g.addColorStop(1, '#3a2c30'); x.fillStyle = g; x.fillRect(0, 0, 4, 256); });
+  camera = new THREE.PerspectiveCamera(35, innerWidth / innerHeight, 0.005, 10);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x8a6a4a, 1.7));
+  const sun = new THREE.DirectionalLight(0xffffff, 1.8); sun.position.set(0.6, 2, 1.2); scene.add(sun);
+  const table = new THREE.Mesh(new THREE.CircleGeometry(0.2, 48).rotateX(-Math.PI / 2), new THREE.MeshLambertMaterial({ map: woodTex('#8a5a34', '#6a4024', 'table') }));
+  scene.add(table);
+  const obj = make(); scene.add(obj); scene.add(makeShadow(new THREE.Vector3(), 0, 0.09, 0.07));
+  const box = new THREE.Box3().setFromObject(obj), size = box.getSize(new THREE.Vector3()).length();
+  let yaw = 0.5, pitch = 0.45, dist = size * 2.4, drag = null;
+  addEventListener('pointerdown', e => drag = { x: e.clientX, y: e.clientY, yaw, pitch });
+  addEventListener('pointermove', e => { if (!drag) return; yaw = drag.yaw - (e.clientX - drag.x) * 0.01; pitch = THREE.MathUtils.clamp(drag.pitch + (e.clientY - drag.y) * 0.01, 0.05, 1.4); });
+  addEventListener('pointerup', () => drag = null);
+  const t0 = performance.now();
+  (function frame(now) {
+    requestAnimationFrame(frame);
+    const t = (now - t0) / 1000; U.uTime.value = t;
+    if (!drag) yaw += 0.003;
+    const c = box.getCenter(new THREE.Vector3());
+    camera.position.set(c.x + Math.sin(yaw) * Math.cos(pitch) * dist, c.y + Math.sin(pitch) * dist, c.z + Math.cos(yaw) * Math.cos(pitch) * dist);
+    camera.lookAt(c);
+    if (obj.userData.tick) obj.userData.tick(t);
+    renderer.render(scene, camera);
+  })(t0);
+  window.__preview = { setView: (y, p, d) => { yaw = y; pitch = p; if (d) dist = size * d; } }; // スクリーンショット用
 });
 
 /* ---------------------------------------------------------------
@@ -971,6 +1077,8 @@ function initThree() {
   if (!state.camOK) buildNoCamStage();
   buildScenery();
   buildSeasonParticles();
+  buildRoomMovers();
+  buildFoamClouds();
 
   addEventListener('resize', onResize);
   addEventListener('orientationchange', () => setTimeout(onResize, 300));
@@ -1024,10 +1132,58 @@ function buildScenery() {
       mesh.renderOrder = -2;
       scene.add(mesh);
     };
-    img.onerror = () => console.warn('景色の画像を読み込めませんでした', sceneryUrl(slot.spot, state.season));
-    img.src = sceneryUrl(slot.spot, state.season);
+    img.onerror = () => console.warn('景色の画像を読み込めませんでした', slotUrl(slot, state.season));
+    img.src = slotUrl(slot, state.season);
+    if (slot.sign) addRouteSign(slot.sign, slot.deg, R - 0.6);
+  });
+  if (SC.route && SC.mode === 'surround') buildRouteArrows(R - 0.5);
+}
+
+
+/* ---- 背景②：空に浮かぶ看板（出発・経由・到着） ---- */
+function addRouteSign(sign, deg, R) {
+  const text = sign.text.replace('{shop}', C.SHOP.name);
+  const style = { start: ['#13284f', '#ffc53d', 'START'], via: ['#1f7a4d', '#ffffff', 'VIA'], goal: ['#c62a24', '#ffffff', 'GOAL'] }[sign.type] || ['#1f7a4d', '#fff', ''];
+  const tex = canvasTex(640, 220, (x, w, h) => {
+    x.fillStyle = style[0]; x.strokeStyle = '#ffffff'; x.lineWidth = 10;
+    x.beginPath(); x.roundRect(8, 8, w - 16, h - 16, 26); x.fill(); x.stroke();
+    x.fillStyle = style[1]; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.font = '900 38px sans-serif'; x.fillText(style[2] + '  ▶ 速達生ルート', w / 2, 62);
+    x.font = '900 60px sans-serif';
+    let fs = 60; while (x.measureText(text).width > w - 60 && fs > 30) { fs -= 4; x.font = `900 ${fs}px sans-serif`; }
+    x.fillText(text, w / 2, 145);
+  });
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, fog: false }));
+  const d = THREE.MathUtils.degToRad(deg);
+  sp.position.set(Math.sin(d) * R, 0.75, -Math.cos(d) * R); // deg 0 = 最初の正面（-Z）
+  sp.scale.set(2.2, 0.76, 1);
+  sp.renderOrder = -1;
+  scene.add(sp);
+}
+
+/* ---- 背景②：道路の上を「出発 → 到着」へ流れる光の矢印 ---- */
+let routeTex = [];
+function buildRouteArrows(R) {
+  const make = () => {
+    const t = canvasTex(128, 32, (x, w, h) => {
+      x.shadowColor = 'rgba(255,200,80,1)'; x.shadowBlur = 8; x.strokeStyle = 'rgba(255,215,120,.95)'; x.lineWidth = 6; x.lineCap = 'round';
+      x.beginPath(); x.moveTo(40, 6); x.lineTo(70, 16); x.lineTo(40, 26); x.stroke();
+    });
+    t.wrapS = THREE.RepeatWrapping; t.repeat.set(Math.round(Math.PI * R / 0.9), 1);
+    return t;
+  };
+  [0, Math.PI].forEach((start, i) => {          // 右半分と左半分（どちらも うしろ→正面 に流れる）
+    const tex = make();
+    if (i === 1) tex.repeat.x *= -1;            // 左半分は矢印を逆向きに（正面のお店で合流する）
+    const mesh = new THREE.Mesh(new THREE.CylinderGeometry(R, R, 0.22, 48, 1, true, start, Math.PI),
+      new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, fog: false }));
+    mesh.position.y = FLOOR_Y + 0.16;
+    mesh.renderOrder = -1;
+    scene.add(mesh);
+    routeTex.push({ tex, dir: i === 0 ? -1 : 1 });
   });
 }
+function updateRouteArrows(dt) { routeTex.forEach(r => { r.tex.offset.x += r.dir * dt * 1.2; }); }
 
 /* ---- 季節の舞うもの（花びら・泡・紅葉・雪） ---- */
 const SEASON_VS = `
@@ -1121,9 +1277,9 @@ function buildNoCamStage() {
     x.fillStyle = g; x.fillRect(0, 0, 512, 512);
   });
   const floor = new THREE.Mesh(new THREE.CircleGeometry(12, 40).rotateX(-Math.PI / 2), new THREE.MeshLambertMaterial({ map: floorTex, transparent: true }));
-  floor.position.y = FLOOR_Y - 0.01; scene.add(floor);
+  floor.position.y = FLOOR_Y - 0.01; floor.renderOrder = -10; scene.add(floor); // 先に描いて、上に立つ画像素材を隠さないように
   const tray = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.04, 32), new THREE.MeshLambertMaterial({ color: 0x6a4428 }));
-  tray.position.set(0, -0.47, -0.7); scene.add(tray);
+  tray.position.set(0, -0.47, -0.7); if (!(C.DIORAMA && C.DIORAMA.enabled)) scene.add(tray); // ジオラマがあるときはお盆の代わりにジオラマ
   const g = new THREE.Group();
   const beer = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.038, 0.13, 20), new THREE.MeshLambertMaterial({ color: 0xf2a51e, emissive: 0x5a3000 }));
   beer.position.y = 0.065; g.add(beer);
@@ -1161,14 +1317,16 @@ function createTruck(center) {
   const texR = new THREE.CanvasTexture(truckFacingRight(truckImg)); texR.colorSpace = THREE.SRGBColorSpace;
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texL, transparent: true, depthWrite: false }));
   sprite.center.set(0.5, 0.02);
-  const L = D.length, H = L * truckImg.naturalHeight / truckImg.naturalWidth;
+  const DI = C.DIORAMA && C.DIORAMA.enabled ? C.DIORAMA : null;
+  const L = DI ? DI.truckLength : D.length, H = L * truckImg.naturalHeight / truckImg.naturalWidth;
   sprite.scale.set(L, H, 1);
   const shadowTex = canvasTex(64, 64, (x) => { const g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, 'rgba(0,0,0,.55)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64); });
   const shadow = new THREE.Mesh(new THREE.PlaneGeometry(L * 1.15, L * 0.45).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false }));
   const light = glowSprite(0xffe7a0, L * 0.9, 0.7);
   scene.add(shadow, sprite, light);
   const toCam = Math.atan2(-center.z, -center.x);                  // グラスから見た「お客さん側」の角度
-  return { sprite, shadow, light, texL, texR, L, H, center, a: toCam + Math.PI, facing: 'L', t: 0, target: null, stopT: 0, onArrive: null };
+  return { sprite, shadow, light, texL, texR, L, H, center, a: toCam + Math.PI, facing: 'L', t: 0, target: null, stopT: 0, onArrive: null,
+    radius: DI ? DI.roadRadius : D.radius, speed: DI ? DI.speed : D.speed };
 }
 
 function startDelivery() {
@@ -1179,6 +1337,7 @@ function startDelivery() {
   truckReady.then(ok => {
     if (state.mode !== 'delivering') return;
     if (!ok) { C.REVEAL.style === 'bubble' ? startFoam(glassPos.clone()) : launchParcel(glassPos.clone()); return; } // 画像が無いときはグラスから直接
+    if (C.DIORAMA && C.DIORAMA.enabled) { startDioramaDelivery(center); return; }
     if (!truck) truck = createTruck(center);
     if (C.REVEAL.style === 'bubble') {                             // 案B：トラックは走り続け、グラスの泡からカプセルが出る
       setGuide('🚚 速達トラックがやってきた！', 'グラスをよく見ててね…');
@@ -1201,30 +1360,35 @@ function startDelivery() {
 }
 
 const _tt = {};
-function updateTruck(dt) {
-  const tr = truck; if (!tr) return;
+function updateTruck(dt) { updateTruckOne(truck, dt); updateTruckOne(truck2, dt); }
+function updateTruckOne(tr, dt) {
+  if (!tr) return;
   if (!_tt.v) { _tt.v = new THREE.Vector3(); _tt.p = new THREE.Vector3(); _tt.r = new THREE.Vector3(); }
   const D = C.DELIVERY;
   tr.t += dt;
   let moving = true;
   if (tr.stopT > 0) { tr.stopT -= dt; moving = false; }
   else {
-    let step = D.speed * dt / D.radius;
+    let step = tr.speed * dt / (diorama && diorama.L ? 1 : tr.radius);   // ジオラマでは道のり(m)で進む
     if (tr.target != null) {                                       // 停車位置が近づいたら減速
       const rem = tr.a - tr.target;
-      step = Math.min(rem, step * THREE.MathUtils.clamp(rem / 0.9, 0.12, 1));
+      step = Math.min(rem, step * THREE.MathUtils.clamp(rem / (diorama && diorama.L ? 0.09 : 0.9), 0.12, 1));
       if (rem <= 0.0005) { tr.target = null; tr.stopT = 2.2; moving = false; const cb = tr.onArrive; tr.onArrive = null; cb && cb(); step = 0; }
     }
-    tr.a -= step;
+    tr.a -= step * (tr.dir || 1);                                  // dir=-1 は反対まわり（反対車線）
   }
-  const p = _tt.p.set(tr.center.x + Math.cos(tr.a) * D.radius, tr.center.y + (moving ? Math.abs(Math.sin(tr.t * 22)) * 0.0015 : 0), tr.center.z + Math.sin(tr.a) * D.radius);
+  const yOff = diorama ? diorama.H : 0;                            // ジオラマの台の上を走る
+  const bump = moving ? Math.abs(Math.sin(tr.t * 22)) * 0.0012 : 0;
+  const p = diorama && diorama.L
+    ? _tt.p.copy(diorama.pathWorld(tr.a, tr.off || 0)).setY(tr.center.y + yOff + bump)          // 陸上トラック形の道路を走る
+    : _tt.p.set(tr.center.x + Math.cos(tr.a) * tr.radius, tr.center.y + yOff + bump, tr.center.z + Math.sin(tr.a) * tr.radius);
   const before = _tt.v.copy(tr.sprite.position).project(camera).x, after = p.clone().project(camera).x;
   if (Math.abs(after - before) > 0.0008) {                          // 画面上で右へ進むなら右向きの絵
     const want = after > before ? 'R' : 'L';
     if (want !== tr.facing) { tr.facing = want; tr.sprite.material.map = want === 'R' ? tr.texR : tr.texL; tr.sprite.material.needsUpdate = true; }
   }
   tr.sprite.position.copy(p);
-  tr.shadow.position.set(p.x, tr.center.y + 0.001, p.z);
+  tr.shadow.position.set(p.x, tr.center.y + yOff + 0.0015, p.z);
   const right = _tt.r.set(1, 0, 0).applyQuaternion(camera.quaternion);
   tr.shadow.rotation.y = Math.atan2(-right.z, right.x);
   tr.light.position.copy(p).addScaledVector(right, (tr.facing === 'R' ? 1 : -1) * tr.L * 0.5).add(new THREE.Vector3(0, tr.H * 0.3, 0));
@@ -1237,6 +1401,760 @@ function updateTruck(dt) {
   tr.sprite.material.opacity = 1 - hidden;
   tr.light.material.opacity = 0.7 * (1 - hidden);
   tr.shadow.material.opacity = 1 - hidden * 0.6;
+}
+
+
+
+
+/* ---- 背景のビール泡雲：店内の上のほうに、白い泡の雲がもくもく浮かぶ ---- */
+let foamClouds = [];
+function makeFoamCloudTex(seed) {
+  const rnd = (() => { let t = seed * 9301 + 49297; return () => ((t = (t * 9301 + 49297) % 233280) / 233280); })();
+  return canvasTex(512, 320, (x, w, h) => {
+    const puffs = [];
+    for (let i = 0; i < 26; i++) { const px = w * (0.15 + rnd() * 0.7), r = h * (0.12 + rnd() * 0.16); puffs.push([px, h * 0.72 - r * (0.3 + rnd() * 1.1) * (1 - Math.abs(px / w - 0.5) * 1.2), r]); }
+    puffs.forEach(([px, py, r]) => {                                       // もこもこの泡のかたまり
+      const g = x.createRadialGradient(px - r * 0.3, py - r * 0.35, r * 0.1, px, py, r);
+      g.addColorStop(0, 'rgba(255,253,246,1)'); g.addColorStop(0.7, 'rgba(250,240,220,1)'); g.addColorStop(0.92, 'rgba(225,205,170,.9)'); g.addColorStop(1, 'rgba(225,205,170,0)');
+      x.fillStyle = g; x.beginPath(); x.arc(px, py, r, 0, 7); x.fill();
+    });
+    for (let i = 0; i < 160; i++) {                                         // 泡のつぶつぶ
+      const px = w * (0.15 + rnd() * 0.7), py = h * (0.15 + rnd() * 0.6), r = 2 + rnd() * 6;
+      const d = x.getImageData(px | 0, py | 0, 1, 1).data; if (d[3] < 200) continue;
+      x.strokeStyle = 'rgba(200,175,130,.45)'; x.lineWidth = 1.2; x.beginPath(); x.arc(px, py, r, 0, 7); x.stroke();
+      x.fillStyle = 'rgba(255,255,255,.9)'; x.beginPath(); x.arc(px - r * 0.3, py - r * 0.3, r * 0.3, 0, 7); x.fill();
+    }
+    const fade = x.createLinearGradient(0, h * 0.62, 0, h * 0.82);         // 下側はビール色にうすく溶ける
+    fade.addColorStop(0, 'rgba(255,200,80,0)'); fade.addColorStop(1, 'rgba(255,190,60,.35)');
+    x.globalCompositeOperation = 'source-atop'; x.fillStyle = fade; x.fillRect(0, 0, w, h); x.globalCompositeOperation = 'source-over';
+  });
+}
+function buildFoamClouds() {
+  const n = (C.ROOM && C.ROOM.foamClouds) || 0;
+  for (let i = 0; i < n; i++) {
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: makeFoamCloudTex(i + 3), transparent: true, depthWrite: false, opacity: 0.92, fog: false }));
+    const a = -Math.PI / 2 + Math.PI * 2 * i / n + 0.2, r = 5.5 + (i % 3) * 0.8, s = 2.2 + (i % 3) * 0.7;
+    sp.scale.set(s * 1.6, s, 1); sp.renderOrder = -3;
+    sp.userData = { a, r, y: 1.7 + (i % 2) * 0.5, s, ph: i * 1.7, sp: 0.006 + (i % 3) * 0.003 };
+    scene.add(sp); foamClouds.push(sp);
+  }
+}
+function updateFoamClouds(time, dt) {
+  foamClouds.forEach(c => {
+    const u = c.userData; u.a += u.sp * dt;
+    c.position.set(Math.cos(u.a) * u.r, u.y + Math.sin(time * 0.25 + u.ph) * 0.12, Math.sin(u.a) * u.r);
+    const b = 1 + Math.sin(time * 0.6 + u.ph) * 0.04;                       // もくもく、ゆっくりふくらむ
+    c.scale.set(u.s * 1.6 * b, u.s * (2 - b), 1);
+  });
+}
+
+/* =====================================================================
+   お店の中を360°動きまわる演出（飛行船・ジョッキの気球）
+   ===================================================================== */
+const roomMovers = [];
+function buildRoomMovers() {
+  const RM = C.ROOM; if (!RM) return;
+  if (RM.blimp && RM.blimpImage) {                                 // 飛行船（画像版）：文字と旗を描き足す
+    const img = new Image();
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, alphaTest: 0.05, depthWrite: false })); sp.visible = false;
+    img.onload = () => {
+      const make = (mirror) => {                                   // mirror=true は右向き（文字は鏡にしない）
+        const k = 1024 / img.width, bw = img.width * k, bh = img.height * k;
+        const banner = !!RM.bannerText;
+        const gap = banner ? bw * 0.1 : 0, fw = banner ? bw * 0.75 : 0, fh = bh * 0.34, W = bw + gap + fw, H = bh;
+        return canvasTex(Math.round(W), Math.round(H), (x) => {
+          const bx = mirror ? W - bw : 0, flip = (px) => mirror ? W - px : px;
+          x.save(); if (mirror) { x.translate(W, 0); x.scale(-1, 1); } x.drawImage(img, 0, 0, bw, bh); x.restore();
+          x.fillStyle = '#d4231c'; x.font = `900 ${Math.round(bh * 0.24)}px "Dela Gothic One", sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle';
+          x.shadowColor = 'rgba(255,255,255,.6)'; x.shadowBlur = 6;
+          if (RM.blimpText) x.fillText(RM.blimpText, flip(bw * 0.22), bh * 0.42);
+          x.shadowBlur = 0;
+          if (!banner) return;
+          const ry = bh * 0.5, r0 = flip(bw * 0.97), r1 = mirror ? fw : bw + gap;            // ロープ
+          x.strokeStyle = '#6a6a6a'; x.lineWidth = 4; x.beginPath(); x.moveTo(r0, ry); x.lineTo(r1, ry); x.stroke();
+          const fx = mirror ? 0 : bw + gap, fy = ry - fh / 2;                                  // 旗
+          x.fillStyle = '#fffaf0'; x.strokeStyle = '#e5322d'; x.lineWidth = 6;
+          x.beginPath(); x.moveTo(fx, fy);
+          for (let i = 0; i <= 20; i++) x.lineTo(fx + fw * i / 20, fy + Math.sin(i * 0.9) * fh * 0.06);
+          for (let i = 20; i >= 0; i--) x.lineTo(fx + fw * i / 20, fy + fh + Math.sin(i * 0.9) * fh * 0.06);
+          x.closePath(); x.fill(); x.stroke();
+          x.fillStyle = '#e5322d'; let fs = fh * 0.62; x.font = `900 ${fs}px sans-serif`;
+          while (x.measureText(RM.bannerText).width > fw * 0.9 && fs > 10) { fs -= 2; x.font = `900 ${fs}px sans-serif`; }
+          x.fillText(RM.bannerText, fx + fw / 2, ry + 2);
+        });
+      };
+      sp.userData.texL = make(false); sp.userData.texR = make(true);
+      sp.material.map = sp.userData.texL; sp.material.needsUpdate = true;
+      const H = RM.bannerText ? 0.7 : 0.85, img2 = sp.userData.texL.image; sp.scale.set(H * img2.width / img2.height, H, 1); sp.visible = true; // 飛行船の高さ(m)（大きく）
+    };
+    img.onerror = () => console.warn('素材の画像を読み込めませんでした', RM.blimpImage);
+    img.src = C.SCENERY.dir + RM.blimpImage;
+    sp.userData = { ...sp.userData, kind: 'blimpImg', r: 2.8, a: -Math.PI / 2 + 0.25, y: 0.45, facing: 'L' };
+    scene.add(sp); roomMovers.push(sp);
+  } else if (RM.blimp) {
+    const b = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.22, 28, 16), lam(0xffc53d, { emissive: 0x4a2a00 })); body.scale.set(2.4, 1, 1); b.add(body);
+    const band = new THREE.Mesh(new THREE.CylinderGeometry(0.205, 0.205, 0.07, 28, 1, true), lam(0xe5322d, { side: THREE.DoubleSide })); band.rotation.z = Math.PI / 2; band.scale.set(1, 1, 1); b.add(band);
+    const txt = labelTex(RM.blimpText, 512, 160, 'rgba(0,0,0,0)', '#e5322d', '900 120px sans-serif');
+    [1, -1].forEach(s => { const t = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.19), new THREE.MeshBasicMaterial({ map: txt, transparent: true, side: THREE.DoubleSide }));
+      t.position.set(0.02, 0.07, s * 0.205); if (s < 0) t.rotation.y = Math.PI; b.add(t); });
+    const fin = lam(0xe5322d);
+    [[0, 1], [0, -1], [1, 0], [-1, 0]].forEach(([y, z]) => { const f = new THREE.Mesh(new THREE.BoxGeometry(0.16, y ? 0.14 : 0.01, z ? 0.14 : 0.01), fin); f.position.set(-0.48, y * 0.08, z * 0.08); b.add(f); });
+    const gondola = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.05, 0.07), lam(0xffffff)); gondola.position.set(0.05, -0.23, 0); b.add(gondola);
+    const winG = new THREE.Mesh(new THREE.PlaneGeometry(0.12, 0.02), new THREE.MeshBasicMaterial({ color: 0x6fd6ff })); winG.position.set(0.05, -0.225, 0.036); b.add(winG);
+    // ひっぱる旗
+    const flag = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.16, 12, 1), new THREE.MeshBasicMaterial({ map: labelTex(RM.bannerText, 512, 104, '#fffaf0', '#e5322d', '900 64px sans-serif'), side: THREE.DoubleSide }));
+    flag.position.set(-1.05, -0.05, 0); b.add(flag);
+    const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.003, 0.003, 0.18, 4), lam(0x666666)); rope.rotation.z = Math.PI / 2; rope.position.set(-0.6, -0.03, 0); b.add(rope);
+    b.userData = { kind: 'blimp', r: 2.4, a: -Math.PI / 2 + 0.25, y: 0.6, flag, base: flag.geometry.attributes.position.array.slice() };
+    scene.add(b); roomMovers.push(b);
+  }
+  // 画像素材を板にして浮かべる（いつもこちらを向く）
+  const imgSprite = (file, h, onload) => {
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, alphaTest: 0.05, depthWrite: false })); sp.visible = false;
+    new THREE.TextureLoader().load(C.SCENERY.dir + file, t => {
+      t.colorSpace = THREE.SRGBColorSpace; sp.material.map = t; sp.material.needsUpdate = true;
+      sp.scale.set(h * t.image.width / t.image.height, h, 1); sp.userData.baseScale = sp.scale.clone(); sp.visible = true;
+      if (onload) onload(t);
+    }, undefined, () => console.warn('素材の画像を読み込めませんでした', file));
+    return sp;
+  };
+  const around = (i, n, off) => -Math.PI / 2 + Math.PI * 2 * (i + 0.5) / n + off;
+  for (let i = 0; i < (RM.birds || 0) && RM.birdImage; i++) {      // 鶴：店内を大きく旋回して飛ぶ
+    const sp = imgSprite(RM.birdImage, 0.32, t => { const f = t.clone(); f.repeat.x = -1; f.offset.x = 1; f.needsUpdate = true; sp.userData.texL = t; sp.userData.texR = f; });
+    sp.userData = { kind: 'bird', a: around(i, RM.birds, 1.1), r: 2.0 + (i % 2) * 0.8, y: 0.45 + (i % 3) * 0.25, sp: (i % 2 ? 1 : -1) * 0.16, ph: i * 1.3, facing: 'L' };
+    scene.add(sp); roomMovers.push(sp);
+  }
+  for (let i = 0; i < (RM.bottles || 0) && RM.bottleImage; i++) {  // 一升瓶：ふわふわ浮かぶ
+    const sp = imgSprite(RM.bottleImage, 0.45);
+    sp.userData = { kind: 'bottle', a: around(i, RM.bottles, 0.75), r: 2.2 + (i % 2) * 0.6, y: -0.25 + (i % 2) * 0.4, sp: 0.012, ph: i * 2.1 };
+    scene.add(sp); roomMovers.push(sp);
+  }
+  if (RM.planet && RM.planetImage) {                               // ビールの惑星：高いところでゆっくり回る
+    const sp = imgSprite(RM.planetImage, 1.9);                    // 惑星（大きく）
+    const gl = glowSprite(0xffc040, 4.4, 0.35);
+    sp.userData = { kind: 'planet', a: -Math.PI / 2 - 0.6, r: 4.6, y: 1.35, glow: gl };
+    scene.add(gl, sp); roomMovers.push(sp);
+  }
+  if (RM.balloonImage) {                                           // ジョッキの気球（画像版）
+    for (let i = 0; i < (RM.balloons || 0); i++) {
+      const sp = imgSprite(RM.balloonImage, 0.85 + (i % 3) * 0.12); // 気球（大きく）
+      const a = around(i, RM.balloons, 0.35), r = 2.6 + (i % 3) * 0.5;
+      sp.userData = { kind: 'balloonImg', a, r, y: -0.15 + (i % 3) * 0.3, ph: Math.random() * 6, sp: (i % 2 ? 1 : -1) * 0.02 };
+      sp.position.set(Math.cos(a) * r, sp.userData.y, Math.sin(a) * r);
+      scene.add(sp); roomMovers.push(sp);
+    }
+  }
+  for (let i = 0; i < (RM.balloonImage ? 0 : RM.balloons || 0); i++) {   // ジョッキの気球（図形の仮素材）
+    const g = new THREE.Group();
+    const s = 0.8 + Math.random() * 0.4;
+    const mug = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.12, 0.34, 18), lam(0xf2a51e, { emissive: 0x5a3000 })); g.add(mug);
+    [[0, 0.2, 0, 0.1], [0.08, 0.18, 0.04, 0.075], [-0.08, 0.18, -0.03, 0.08], [0.02, 0.19, -0.08, 0.07], [-0.03, 0.19, 0.08, 0.07]].forEach(([x, y, z, r]) => {
+      const f = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 8), lam(0xfffaf0, { emissive: 0x332a1a })); f.position.set(x, y, z); g.add(f); });
+    const handle = new THREE.Mesh(new THREE.TorusGeometry(0.08, 0.02, 6, 14, Math.PI), lam(0xfff3d0)); handle.rotation.z = -Math.PI / 2; handle.position.x = 0.14; g.add(handle);
+    [-1, 1].forEach(sx => [-1, 1].forEach(sz => { const r = new THREE.Mesh(new THREE.CylinderGeometry(0.003, 0.003, 0.2, 4), lam(0x8a6a4a)); r.position.set(sx * 0.07, -0.27, sz * 0.07); g.add(r); }));
+    const basket = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.07, 0.12), lam(0x9a6a3a)); basket.position.y = -0.4; g.add(basket);
+    const glow = glowSprite(0xffc060, 0.9, 0.35); g.add(glow);
+    g.scale.setScalar(s);
+    const a = -Math.PI / 2 + Math.PI * 2 * (i + 0.5) / RM.balloons + 0.35, r = 2.6 + (i % 3) * 0.5;
+    g.userData = { kind: 'balloon', a, r, y: -0.15 + (i % 3) * 0.3, ph: Math.random() * 6, sp: (i % 2 ? 1 : -1) * 0.02 };
+    g.position.set(Math.cos(a) * r, g.userData.y, Math.sin(a) * r);
+    scene.add(g); roomMovers.push(g);
+  }
+}
+let _rv = null;
+function updateRoomMovers(dt, time) {
+  _rv = _rv || new THREE.Vector3();
+  roomMovers.forEach(m => {
+    const u = m.userData;
+    if (u.kind === 'blimp') {
+      u.a += dt * 0.07;                                            // ゆっくり店内を一周（約90秒）
+      m.position.set(Math.cos(u.a) * u.r, u.y + Math.sin(time * 0.6) * 0.05, Math.sin(u.a) * u.r);
+      m.rotation.set(0, -u.a - Math.PI / 2, Math.sin(time * 0.6) * 0.04); // 進む方向を向く（横腹の「速達生」がこちらに見える）
+      const pa = u.flag.geometry.attributes.position;               // 旗をなびかせる
+      for (let i = 0; i < pa.count; i++) { const x0 = u.base[i * 3]; pa.setZ(i, Math.sin(time * 5 + x0 * 7) * 0.04 * (0.4 - x0)); }
+      pa.needsUpdate = true;
+    } else if (u.kind === 'blimpImg') {
+      const before = _rv.copy(m.position).project(camera).x;
+      u.a += dt * 0.07;                                            // ゆっくり店内を一周（約90秒）
+      m.position.set(Math.cos(u.a) * u.r, u.y + Math.sin(time * 0.6) * 0.05, Math.sin(u.a) * u.r);
+      const after = _rv.copy(m.position).project(camera).x;
+      const want = after > before ? 'R' : 'L';                     // 画面上の進む向きで、機首の向きを切り替え
+      if (u.texL && want !== u.facing && Math.abs(after - before) > 0.0003) { u.facing = want; m.material.map = want === 'R' ? u.texR : u.texL; m.material.needsUpdate = true; }
+      m.material.rotation = Math.sin(time * 0.6) * 0.03;
+    } else if (u.kind === 'bird') {
+      const before = _rv.copy(m.position).project(camera).x;
+      u.a += u.sp * dt;
+      m.position.set(Math.cos(u.a) * u.r, u.y + Math.sin(time * 1.4 + u.ph) * 0.08, Math.sin(u.a) * u.r);
+      const after = _rv.copy(m.position).project(camera).x;          // 画面上の進む向きに合わせて絵を左右反転（絵は左向き）
+      const want = after > before ? 'R' : 'L';
+      if (u.texL && want !== u.facing && Math.abs(after - before) > 0.0005) { u.facing = want; m.material.map = want === 'R' ? u.texR : u.texL; m.material.needsUpdate = true; }
+      if (m.userData.baseScale) { const f = 1 + Math.sin(time * 6 + u.ph) * 0.12; m.scale.set(m.userData.baseScale.x, m.userData.baseScale.y * f, 1); } // はばたき
+      m.material.rotation = Math.sin(time * 1.4 + u.ph) * 0.08;
+    } else if (u.kind === 'bottle') {
+      u.a += u.sp * dt;
+      m.position.set(Math.cos(u.a) * u.r, u.y + Math.sin(time * 0.8 + u.ph) * 0.12, Math.sin(u.a) * u.r);
+      m.material.rotation = Math.sin(time * 0.6 + u.ph) * 0.25;       // ゆらゆら傾く
+    } else if (u.kind === 'planet') {
+      u.a += dt * 0.01;
+      m.position.set(Math.cos(u.a) * u.r, u.y + Math.sin(time * 0.3) * 0.08, Math.sin(u.a) * u.r);
+      u.glow.position.copy(m.position); u.glow.material.opacity = 0.3 + Math.sin(time * 1.2) * 0.08;
+      m.material.rotation = Math.sin(time * 0.2) * 0.15;
+    } else {
+      u.a += u.sp * dt;
+      m.position.set(Math.cos(u.a) * u.r, u.y + Math.sin(time * 0.5 + u.ph) * 0.18, Math.sin(u.a) * u.r);
+      if (u.kind === 'balloonImg') m.material.rotation = Math.sin(time * 0.7 + u.ph) * 0.06;
+      else { m.rotation.y = time * 0.15 + u.ph; m.rotation.z = Math.sin(time * 0.7 + u.ph) * 0.06; }
+    }
+  });
+}
+
+/* =====================================================================
+   卓上ジオラマ（卓上A）：物流センター → 道路 → お店。トラックが樽を運び続ける
+   ===================================================================== */
+let diorama = null;
+let truck2 = null;                     // 反対車線を走る2台目
+function lam(color, extra = {}) { return new THREE.MeshLambertMaterial({ color, ...extra }); }
+function labelTex(text, w, h, bg, fg, font) {
+  return canvasTex(w, h, (x) => {
+    x.fillStyle = bg; x.fillRect(0, 0, w, h);
+    x.fillStyle = fg; x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = font;
+    let fs = parseInt(font.match(/(\d+)px/)[1]);
+    while (x.measureText(text).width > w * 0.92 && fs > 8) { fs -= 2; x.font = font.replace(/\d+px/, fs + 'px'); }
+    x.fillText(text, w / 2, h / 2 + 2);
+  });
+}
+function makeWarehouse() {             // 物流センター（白い倉庫＋ひさし＋搬入口）
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.038, 0.05), lam(0xf3f5f7)); body.position.y = 0.019; g.add(body);
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(0.079, 0.004, 0.054), lam(0xb9c0ca)); roof.position.y = 0.04; g.add(roof);
+  const band = new THREE.Mesh(new THREE.BoxGeometry(0.0755, 0.004, 0.0505), lam(0x2a5fb0)); band.position.y = 0.032; g.add(band);
+  const canopy = new THREE.Mesh(new THREE.BoxGeometry(0.056, 0.0025, 0.02), lam(0x7d848f)); canopy.position.set(-0.006, 0.022, 0.034); g.add(canopy);
+  for (let i = 0; i < 3; i++) { const door = new THREE.Mesh(new THREE.PlaneGeometry(0.012, 0.015), lam(0x3a3f48)); door.position.set(-0.024 + i * 0.016, 0.008, 0.0252); g.add(door); }
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(0.05, 0.011), new THREE.MeshBasicMaterial({ map: labelTex(C.DIORAMA.warehouseName + ' 物流センター', 256, 56, '#ffffff', '#e5322d', '900 30px sans-serif') }));
+  sign.position.set(0, 0.03, 0.0258); g.add(sign);
+  g.userData.door = new THREE.Vector3(-0.008, 0.01, 0.04);
+  return g;
+}
+/* ===== ASSET: izakaya ===== ① お店（和の居酒屋）
+   町家風の2階建て：瓦屋根・格子・のれん（ゆれる）・赤ちょうちん・立て看板・ビールケース
+   大きさは 1 = 間口の幅 で作り、最後に縮小してテーブルに置きます */
+const _wtex = {};
+function woodTex(base = '#5a3a22', dark = '#3a2414', key = 'w') {
+  return _wtex[key] || (_wtex[key] = canvasTex(256, 256, (x, w, h) => {
+    x.fillStyle = base; x.fillRect(0, 0, w, h);
+    for (let i = 0; i < 70; i++) {                                // 木目
+      const y0 = Math.random() * h; x.strokeStyle = `rgba(${Math.random() < 0.5 ? '0,0,0' : '255,220,170'},${0.05 + Math.random() * 0.08})`;
+      x.lineWidth = 1 + Math.random() * 2; x.beginPath(); x.moveTo(0, y0);
+      for (let k = 0; k <= w; k += 16) x.lineTo(k, y0 + Math.sin(k * 0.03 + i) * 3);
+      x.stroke();
+    }
+    x.fillStyle = dark; for (let k = 0; k < w; k += 32) x.fillRect(k, 0, 2, h);     // 板の継ぎ目
+  }));
+}
+function tileTex() {                                              // 瓦（いぶし銀）
+  return _wtex.tile || (_wtex.tile = (() => {
+    const t = canvasTex(256, 256, (x, w, h) => {
+      x.fillStyle = '#4e5560'; x.fillRect(0, 0, w, h);
+      for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+        const cx = c * 32 + 16, cy = r * 32;
+        const g = x.createLinearGradient(cx - 16, 0, cx + 16, 0);
+        g.addColorStop(0, '#3a4049'); g.addColorStop(0.5, '#7a828e'); g.addColorStop(1, '#3a4049');
+        x.fillStyle = g; x.fillRect(cx - 15, cy, 30, 30);
+        x.fillStyle = 'rgba(0,0,0,.45)'; x.fillRect(cx - 16, cy + 28, 32, 4);   // 段の影
+      }
+    });
+    t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
+  })());
+}
+function plasterTex() {                                           // しっくい壁
+  return _wtex.pl || (_wtex.pl = canvasTex(128, 128, (x, w, h) => {
+    x.fillStyle = '#efe8d8'; x.fillRect(0, 0, w, h);
+    for (let i = 0; i < 900; i++) { x.fillStyle = `rgba(120,100,70,${Math.random() * 0.06})`; x.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
+  }));
+}
+function lanternTex(ch) {                                         // 赤ちょうちん（文字入り）
+  return canvasTex(256, 128, (x, w, h) => {
+    const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#b3161c'); g.addColorStop(0.5, '#ff4a32'); g.addColorStop(1, '#b3161c');
+    x.fillStyle = g; x.fillRect(0, 0, w, h);
+    x.fillStyle = 'rgba(0,0,0,.18)'; for (let y = 6; y < h; y += 11) x.fillRect(0, y, w, 2);    // 竹ひご
+    x.fillStyle = '#1a0a06'; x.font = '900 70px serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.fillText(ch, w * 0.25, h / 2 + 4); x.fillText(ch, w * 0.75, h / 2 + 4);
+  });
+}
+function makeIzakaya(opt = {}) {
+  const o = Object.assign({ name: C.SHOP.name, noren: ['速', '達', '生'], norenColor: '#1d2a5a', lanterns: ['生', '酒'] }, opt);
+  const root = new THREE.Group(), g = new THREE.Group(); root.add(g);
+  const W = 1, D = 0.72, H1 = 0.44, H2 = 0.3;
+  const woodM = new THREE.MeshLambertMaterial({ map: woodTex() });
+  const darkWood = new THREE.MeshLambertMaterial({ color: 0x2e1d12 });
+  const stoneM = new THREE.MeshLambertMaterial({ color: 0x8e8a82 });
+  const tileM = new THREE.MeshLambertMaterial({ map: tileTex(), side: THREE.DoubleSide });
+  const plasterM = new THREE.MeshLambertMaterial({ map: plasterTex() });
+  const add = (geo, mat, x, y, z) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); g.add(m); return m; };
+
+  // 基礎と1階
+  add(new THREE.BoxGeometry(W + 0.04, 0.035, D + 0.04), stoneM, 0, 0.0175, 0);
+  add(new THREE.BoxGeometry(W, H1, D), woodM, 0, 0.035 + H1 / 2, 0);
+  // 1階の正面：格子・明かりのもれる入口（夜の店先なので自ら光る絵にする）
+  const front = canvasTex(512, 256, (x, w, h) => {
+    x.fillStyle = '#3a2414'; x.fillRect(0, 0, w, h);
+    const glow = x.createLinearGradient(0, 0, 0, h); glow.addColorStop(0, '#ffd88f'); glow.addColorStop(1, '#ff9f45');
+    [[16, 40, 170, 190], [200, 30, 112, 226], [328, 40, 168, 190]].forEach(([x0, y0, ww, hh], i) => {
+      x.fillStyle = glow; x.fillRect(x0, y0, ww, hh);
+      if (i === 1) {                                            // 入口：障子の引き戸
+        x.strokeStyle = '#5a3a22'; x.lineWidth = 5; x.strokeRect(x0, y0, ww, hh);
+        x.lineWidth = 2; for (let k = 1; k < 4; k++) { x.beginPath(); x.moveTo(x0 + ww * k / 4, y0); x.lineTo(x0 + ww * k / 4, y0 + hh); x.stroke(); }
+        for (let k = 1; k < 6; k++) { x.beginPath(); x.moveTo(x0, y0 + hh * k / 6); x.lineTo(x0 + ww, y0 + hh * k / 6); x.stroke(); }
+      } else {                                                  // 千本格子
+        x.fillStyle = '#2a180c'; for (let k = x0; k < x0 + ww; k += 9) x.fillRect(k, y0, 5, hh);
+        x.fillRect(x0, y0 + hh * 0.5, ww, 4);
+      }
+    });
+    x.fillStyle = '#2a180c'; x.fillRect(0, 0, w, 14); x.fillRect(0, h - 10, w, 10);
+  });
+  const facade = add(new THREE.PlaneGeometry(W * 0.98, H1 * 0.92), new THREE.MeshBasicMaterial({ map: front }), 0, 0.035 + H1 * 0.48, D / 2 + 0.002);
+  const lightIn = glowSprite(0xffb35a, 1.1, 0.35); lightIn.position.set(0, 0.25, D / 2 + 0.05); g.add(lightIn);
+  // 店先の地面にもれる明かり
+  const pool = add(new THREE.CircleGeometry(0.42, 32).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: canvasTex(128, 128, (x) => {
+    const gr = x.createRadialGradient(64, 64, 0, 64, 64, 64); gr.addColorStop(0, 'rgba(255,190,110,.55)'); gr.addColorStop(1, 'rgba(255,190,110,0)'); x.fillStyle = gr; x.fillRect(0, 0, 128, 128);
+  }), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }), 0, 0.002, D / 2 + 0.12);
+  pool.scale.set(1.3, 1, 0.7);
+  // 柱
+  [-W / 2, -0.2, 0.2, W / 2].forEach(xp => add(new THREE.BoxGeometry(0.04, H1, 0.04), darkWood, xp, 0.035 + H1 / 2, D / 2));
+
+  // 1階の庇（瓦）
+  const eaveY = 0.035 + H1;
+  const eave = add(new THREE.PlaneGeometry(W + 0.14, 0.26), tileM, 0, eaveY + 0.05, D / 2 + 0.1);
+  eave.rotation.x = -Math.PI / 2 + 0.42; tileM.map.repeat.set(4, 1);
+  add(new THREE.BoxGeometry(W + 0.16, 0.025, 0.03), darkWood, 0, eaveY - 0.005, D / 2 + 0.215);  // 軒先の鼻隠し
+
+  // 2階：しっくい壁＋柱＋虫籠窓
+  const y2 = eaveY + 0.05;
+  add(new THREE.BoxGeometry(W - 0.06, H2, D - 0.1), plasterM, 0, y2 + H2 / 2, -0.02);
+  [-(W - 0.06) / 2, 0, (W - 0.06) / 2].forEach(xp => add(new THREE.BoxGeometry(0.035, H2, 0.035), darkWood, xp, y2 + H2 / 2, (D - 0.1) / 2 - 0.02));
+  add(new THREE.BoxGeometry(W - 0.04, 0.03, 0.035), darkWood, 0, y2 + H2 - 0.015, (D - 0.1) / 2 - 0.02);
+  const mushiko = canvasTex(256, 64, (x, w, h) => {
+    x.fillStyle = '#ffcf86'; x.fillRect(0, 0, w, h);
+    x.fillStyle = '#efe8d8'; for (let k = 0; k < w; k += 18) x.fillRect(k, 0, 9, h);   // しっくいの縦格子
+  });
+  [-0.24, 0.24].forEach(xp => add(new THREE.PlaneGeometry(0.3, 0.09), new THREE.MeshBasicMaterial({ map: mushiko }), xp, y2 + 0.12, (D - 0.1) / 2 - 0.018));
+
+  // 看板（2階の正面）
+  const sign = add(new THREE.PlaneGeometry(0.46, 0.1), new THREE.MeshBasicMaterial({ map: canvasTex(512, 112, (x, w, h) => {
+    x.fillStyle = '#2a180c'; x.fillRect(0, 0, w, h); x.strokeStyle = '#c9a14a'; x.lineWidth = 6; x.strokeRect(6, 6, w - 12, h - 12);
+    x.fillStyle = '#f3d38a'; x.font = '900 64px serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    let fs = 64; while (x.measureText(o.name).width > w - 50 && fs > 24) { fs -= 4; x.font = `900 ${fs}px serif`; }
+    x.fillText(o.name, w / 2, h / 2 + 3);
+  }) }), 0, y2 + 0.24, (D - 0.1) / 2 - 0.0);
+
+  // 大屋根（切妻・瓦）
+  const ry = y2 + H2, rise = 0.17, half = D / 2 + 0.08, slope = Math.hypot(half, rise), ang = Math.atan2(rise, half);
+  const roofTile = tileTex().clone(); roofTile.needsUpdate = true; roofTile.repeat.set(5, 2);
+  const roofM = new THREE.MeshLambertMaterial({ map: roofTile, side: THREE.DoubleSide });
+  [1, -1].forEach(s => {
+    const r = add(new THREE.PlaneGeometry(W + 0.16, slope), roofM, 0, ry + rise / 2, s * half / 2 - 0.02);
+    r.rotation.x = -s * (Math.PI / 2 - ang);
+  });
+  const gableShape = new THREE.Shape(); gableShape.moveTo(-(D - 0.1) / 2, 0); gableShape.lineTo((D - 0.1) / 2, 0); gableShape.lineTo(0, rise * 0.9); gableShape.closePath();
+  [-1, 1].forEach(s => { const gm = add(new THREE.ShapeGeometry(gableShape), plasterM, s * (W - 0.06) / 2, ry, -0.02); gm.rotation.y = s * Math.PI / 2; });
+  add(new THREE.BoxGeometry(W + 0.2, 0.035, 0.05), new THREE.MeshLambertMaterial({ color: 0x3a3f48 }), 0, ry + rise + 0.005, -0.02);  // 棟
+  [-1, 1].forEach(s => add(new THREE.BoxGeometry(0.06, 0.07, 0.06), new THREE.MeshLambertMaterial({ color: 0x3a3f48 }), s * (W / 2 + 0.09), ry + rise + 0.02, -0.02)); // 鬼瓦
+
+  // のれん（ゆれる）
+  const noren = [];
+  const nw = 0.1, nh = 0.14, ny = 0.035 + H1 - 0.085;
+  o.noren.forEach((ch, i) => {
+    const tex = canvasTex(64, 96, (x, w, h) => {
+      x.fillStyle = o.norenColor; x.fillRect(0, 0, w, h);
+      x.fillStyle = '#ffffff'; x.font = '900 40px serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(ch, w / 2, h * 0.58);
+      x.fillStyle = 'rgba(0,0,0,.25)'; x.fillRect(0, 0, w, 6);
+    });
+    const geo = new THREE.PlaneGeometry(nw, nh, 1, 6); geo.translate(0, -nh / 2, 0);
+    const m = add(geo, new THREE.MeshLambertMaterial({ map: tex, side: THREE.DoubleSide }), (i - (o.noren.length - 1) / 2) * (nw + 0.006), ny, D / 2 + 0.03);
+    m.userData.base = geo.attributes.position.array.slice(); m.userData.ph = i * 0.8; noren.push(m);
+  });
+  add(new THREE.CylinderGeometry(0.006, 0.006, nw * 3.4, 6), darkWood, 0, ny + 0.004, D / 2 + 0.03).rotation.z = Math.PI / 2;
+
+  // 赤ちょうちん（ゆれる）
+  const lanterns = [];
+  const prof = []; for (let i = 0; i <= 10; i++) { const t = i / 10 * 2 - 1; prof.push(new THREE.Vector2(0.018 + 0.05 * Math.sqrt(1 - t * t * 0.9), t * 0.075)); }
+  o.lanterns.forEach((ch, i) => {
+    const pivot = new THREE.Group(); pivot.position.set((i ? 1 : -1) * 0.38, eaveY - 0.01, D / 2 + 0.12); g.add(pivot);
+    const body = new THREE.Mesh(new THREE.LatheGeometry(prof, 16), new THREE.MeshBasicMaterial({ map: lanternTex(ch) })); body.position.y = -0.1; pivot.add(body);
+    [0.075, -0.075].forEach(yy => { const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.024, 0.014, 12), darkWood); cap.position.y = -0.1 + yy; pivot.add(cap); });
+    const gl = glowSprite(0xff5a32, 0.32, 0.6); gl.position.y = -0.1; pivot.add(gl);
+    pivot.userData.ph = i * 1.7; lanterns.push(pivot);
+  });
+
+  // 店先の小物：立て看板・ビールケース・樽・鉢植え
+  const board = add(new THREE.PlaneGeometry(0.11, 0.17), new THREE.MeshBasicMaterial({ map: canvasTex(128, 196, (x, w, h) => {
+    x.fillStyle = '#2a180c'; x.fillRect(0, 0, w, h); x.fillStyle = '#1e2a22'; x.fillRect(8, 8, w - 16, h - 16);
+    x.fillStyle = '#fff'; x.font = '900 26px sans-serif'; x.textAlign = 'center';
+    x.fillText('本日の', w / 2, 44); x.fillStyle = '#ffd23a'; x.font = '900 34px sans-serif'; x.fillText('生ビール', w / 2, 92);
+    x.fillStyle = '#ff8a6a'; x.font = '900 22px sans-serif'; x.fillText('速達便で', w / 2, 132); x.fillText('入荷！', w / 2, 160);
+  }), side: THREE.DoubleSide }), 0.3, 0.12, D / 2 + 0.2);
+  board.rotation.x = -0.18;
+  const crateM = new THREE.MeshLambertMaterial({ color: 0xf2b21c });
+  [[0, 0], [0, 1], [1, 0]].forEach(([c, r]) => add(new THREE.BoxGeometry(0.1, 0.06, 0.08), crateM, -0.42 + c * 0.105, 0.065 + r * 0.062, D / 2 + 0.12));
+  const keg = add(new THREE.CylinderGeometry(0.045, 0.045, 0.1, 14), new THREE.MeshLambertMaterial({ color: 0xc9ced4 }), -0.18, 0.085, D / 2 + 0.16);
+  add(new THREE.CylinderGeometry(0.048, 0.048, 0.012, 14), new THREE.MeshLambertMaterial({ color: 0x7a808a }), -0.18, 0.11, D / 2 + 0.16);
+  add(new THREE.CylinderGeometry(0.04, 0.03, 0.06, 10), new THREE.MeshLambertMaterial({ color: 0x6a4a32 }), 0.46, 0.065, D / 2 + 0.1);
+  add(new THREE.IcosahedronGeometry(0.06, 0), new THREE.MeshLambertMaterial({ color: 0x3f8a4a, flatShading: true }), 0.46, 0.14, D / 2 + 0.1);
+
+  // うごき：のれんが風にゆれ、ちょうちんがゆらゆら
+  root.userData.tick = (t) => {
+    noren.forEach(m => {
+      const pa = m.geometry.attributes.position, b = m.userData.base;
+      for (let i = 0; i < pa.count; i++) { const yy = b[i * 3 + 1]; pa.setZ(i, b[i * 3 + 2] + Math.sin(t * 2.2 + m.userData.ph + yy * 12) * 0.012 * (-yy / nh)); }
+      pa.needsUpdate = true;
+    });
+    lanterns.forEach(p => { p.rotation.z = Math.sin(t * 1.3 + p.userData.ph) * 0.06; p.rotation.x = Math.cos(t * 1.1 + p.userData.ph) * 0.04; });
+  };
+  root.scale.setScalar(0.068);   // テーブルに置く大きさ（間口 約7cm）
+  root.userData.door = new THREE.Vector3(0, 0.1, D / 2 + 0.2).multiplyScalar(0.068); // 樽を届ける位置
+  return root;
+}
+/* ===== /ASSET: izakaya ===== */
+
+function makeShop() { return makeIzakaya(); }   // 配達先のお店＝① 和の居酒屋
+function makeShopSimple() {            // （旧）簡易版の居酒屋
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.058, 0.032, 0.044), lam(0x6a4426)); body.position.y = 0.016; g.add(body);
+  const eave = new THREE.Mesh(new THREE.BoxGeometry(0.068, 0.003, 0.054), lam(0x2f3036)); eave.position.y = 0.033; g.add(eave);
+  const roof = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.046, 0.02, 4, 1).rotateY(Math.PI / 4), lam(0x3a3b42)); roof.scale.z = 0.8; roof.position.y = 0.044; g.add(roof);
+  const win = new THREE.MeshBasicMaterial({ color: 0xffd27a });
+  [-0.019, 0.019].forEach(x0 => { const w = new THREE.Mesh(new THREE.PlaneGeometry(0.012, 0.012), win); w.position.set(x0, 0.017, 0.0222); g.add(w); });
+  const noren = new THREE.Mesh(new THREE.PlaneGeometry(0.02, 0.012), new THREE.MeshBasicMaterial({ map: labelTex('生', 64, 40, '#1d2a5a', '#ffffff', '900 28px sans-serif') }));
+  noren.position.set(0, 0.022, 0.0224); g.add(noren);
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(0.05, 0.01), new THREE.MeshBasicMaterial({ map: labelTex(C.SHOP.name, 256, 52, '#2a1a10', '#ffd27a', '900 30px serif') }));
+  sign.position.set(0, 0.04, 0.026); g.add(sign);
+  [-0.026, 0.026].forEach(x0 => {
+    const l = new THREE.Mesh(new THREE.SphereGeometry(0.0045, 10, 8), new THREE.MeshBasicMaterial({ color: 0xff5a3a })); l.scale.y = 1.25; l.position.set(x0, 0.026, 0.026); g.add(l);
+    const gl = glowSprite(0xff7a4a, 0.025, 0.6); gl.position.copy(l.position); g.add(gl);
+  });
+  g.userData.door = new THREE.Vector3(0, 0.01, 0.03);
+  return g;
+}
+function makeKeg() {                   // 生ビールの樽
+  const g = new THREE.Group();
+  const k = new THREE.Mesh(new THREE.CylinderGeometry(0.0075, 0.0075, 0.014, 14), lam(0xd5d9de, { emissive: 0x222222 }));
+  const r1 = new THREE.Mesh(new THREE.CylinderGeometry(0.0079, 0.0079, 0.0018, 14), lam(0x7a808a)); r1.position.y = 0.004;
+  const r2 = r1.clone(); r2.position.y = -0.004;
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.0025, 0.0025, 0.002, 8), lam(0xe5322d)); cap.position.y = 0.008;
+  g.add(k, r1, r2, cap); g.visible = false; return g;
+}
+function makeTalk(text, bg = '#ffffff', fg = '#1d1b22') { // 吹き出し
+  const tex = canvasTex(320, 120, (x, w, h) => {
+    x.fillStyle = bg; x.strokeStyle = 'rgba(0,0,0,.25)'; x.lineWidth = 4;
+    x.beginPath(); x.roundRect(6, 6, w - 12, h - 36, 22); x.fill(); x.stroke();
+    x.beginPath(); x.moveTo(w / 2 - 14, h - 31); x.lineTo(w / 2, h - 8); x.lineTo(w / 2 + 14, h - 31); x.fill();
+    x.fillStyle = fg; x.font = '900 40px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    let fs = 40; while (x.measureText(text).width > w - 40 && fs > 18) { fs -= 2; x.font = `900 ${fs}px sans-serif`; }
+    x.fillText(text, w / 2, (h - 30) / 2 + 6);
+  });
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, depthTest: false, opacity: 0 }));
+  sp.center.set(0.5, 0); sp.scale.set(0.075, 0.028, 1); sp.renderOrder = 5;
+  sp.userData.t = 0;
+  return sp;
+}
+function treeColor() { return { haru: 0xffb3cf, natsu: 0x3f9e4a, aki: 0xf08a24, fuyu: 0xf1f5fb }[state.season]; }
+function makeTree(s) {
+  const g = new THREE.Group();
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.0018, 0.0024, 0.012, 6), lam(0x7a5030)); trunk.position.y = 0.006; g.add(trunk);
+  const crown = new THREE.Mesh(new THREE.IcosahedronGeometry(0.011, 0), lam(treeColor(), { flatShading: true })); crown.position.y = 0.02; g.add(crown);
+  g.scale.setScalar(s); return g;
+}
+
+
+/* テーブルに落ちる影（建物の足もと） */
+let _shadowTex;
+function makeShadow(pos, rotY, w, d) {
+  _shadowTex = _shadowTex || canvasTex(64, 64, (x) => { const g = x.createRadialGradient(32, 32, 4, 32, 32, 32); g.addColorStop(0, 'rgba(0,0,0,.5)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64); });
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w * 1.25, d * 1.25).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: _shadowTex, transparent: true, depthWrite: false }));
+  m.position.set(pos.x, 0.0005, pos.z); m.rotation.y = rotY;
+  return m;
+}
+/* 名古屋城（石垣＋白い壁＋緑青の屋根＋金のしゃちほこ） */
+function makeNagoyaCastle() {
+  const g = new THREE.Group();
+  const stone = new THREE.Mesh(new THREE.CylinderGeometry(0.033, 0.045, 0.025, 4, 1).rotateY(Math.PI / 4), lam(0x8d8a82)); stone.scale.z = 0.8; stone.position.y = 0.0125; g.add(stone);
+  const wall = lam(0xf4f1ea), roofM = lam(0x3f8f7d), win = new THREE.MeshBasicMaterial({ color: 0xffd27a });
+  let y = 0.025;
+  [[0.052, 0.016], [0.044, 0.014], [0.036, 0.013], [0.028, 0.012], [0.02, 0.012]].forEach(([w, h], i) => {
+    const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, w * 0.8), wall); b.position.y = y + h / 2; g.add(b);
+    for (let k = -1; k <= 1; k++) { const wd = new THREE.Mesh(new THREE.PlaneGeometry(0.0035, 0.004), win); wd.position.set(k * w * 0.3, y + h * 0.5, w * 0.4 + 0.0003); g.add(wd); }
+    const roof = new THREE.Mesh(new THREE.CylinderGeometry(w * 0.5, w * 0.82, 0.007, 4, 1).rotateY(Math.PI / 4), roofM); roof.scale.z = 0.8; roof.position.y = y + h + 0.0035; g.add(roof);
+    if (i === 1 || i === 3) { const gable = new THREE.Mesh(new THREE.ConeGeometry(w * 0.25, 0.008, 3).rotateY(Math.PI / 2), roofM); gable.position.set(0, y + h + 0.007, w * 0.38); g.add(gable); } // 千鳥破風
+    y += h + 0.007;
+  });
+  const top = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.014, 0.01, 4, 1).rotateY(Math.PI / 4), roofM); top.position.y = y + 0.005; g.add(top);
+  const gold = new THREE.MeshBasicMaterial({ color: 0xffcf3a });
+  [-1, 1].forEach(sx => { const sh = new THREE.Mesh(new THREE.SphereGeometry(0.0028, 8, 6), gold); sh.scale.set(0.7, 1.4, 0.7); sh.position.set(sx * 0.008, y + 0.012, 0); sh.rotation.z = -sx * 0.4; g.add(sh);
+    const gl = glowSprite(0xffd65a, 0.016, 0.8); gl.position.copy(sh.position); g.add(gl); });
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(0.036, 0.008), new THREE.MeshBasicMaterial({ map: labelTex('名古屋城', 192, 44, '#1d2a5a', '#ffd27a', '900 30px serif') }));
+  sign.position.set(0, 0.012, 0.0365); g.add(sign);
+  return g;
+}
+
+/* 素材の差し替え：画像が指定されていれば、背景透明のイラストを板に貼って立てる（常にこちらを向く） */
+function assetOr(spec, builder) {
+  if (!spec || !spec.file) return builder();
+  const g = new THREE.Group(); g.userData.sprite = true;
+  g.userData.door = new THREE.Vector3(0, spec.height * 0.15, 0.012); // 樽を届ける位置（建物の正面の足もと）
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, alphaTest: 0.08 })); // 前後の重なりを正しく
+  sp.center.set(0.5, 0); sp.scale.set(spec.height, spec.height, 1); sp.visible = false; g.add(sp);
+  new THREE.TextureLoader().load(C.SCENERY.dir + spec.file, (t) => {
+    t.colorSpace = THREE.SRGBColorSpace; sp.material.map = t; sp.material.needsUpdate = true; sp.visible = true;
+    sp.scale.set(spec.height * t.image.width / t.image.height, spec.height, 1);
+  }, undefined, () => console.warn('素材の画像を読み込めませんでした', spec.file));
+  return g;
+}
+
+/* 神社の拝殿（石段・朱の柱・大きな屋根・しめ縄・鈴・さい銭箱）＋ おみくじ掛け＋ 石灯籠 */
+function makeShrine() {
+  const g = new THREE.Group();
+  const stone = lam(0xa8a49a), shu = lam(0xd23a2a, { emissive: 0x3a0a04 }), wood = lam(0x7a5233), roofM = lam(0x4a6a60); // 屋根は緑青色
+  const base = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.006, 0.05), stone); base.position.y = 0.003; g.add(base);
+  const step = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.003, 0.008), stone); step.position.set(0, 0.0015, 0.029); g.add(step);
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.046, 0.022, 0.034), wood); body.position.y = 0.017; g.add(body);
+  [[-0.021, 0.018], [0.021, 0.018], [-0.021, -0.016], [0.021, -0.016], [-0.007, 0.018], [0.007, 0.018]].forEach(([x, z]) => {
+    const c = new THREE.Mesh(new THREE.CylinderGeometry(0.0014, 0.0014, 0.022, 6), shu); c.position.set(x, 0.017, z); g.add(c); });
+  const door = new THREE.Mesh(new THREE.PlaneGeometry(0.03, 0.016), new THREE.MeshBasicMaterial({ color: 0xffc46a })); door.position.set(0, 0.016, 0.0172); g.add(door);
+  // 大きな切妻屋根（反りの代わりに軒を深く）
+  const rs = new THREE.Shape(); rs.moveTo(-0.029, 0); rs.lineTo(0.029, 0); rs.lineTo(0, 0.012); rs.closePath(); // 切妻屋根の断面
+  const roofGeo = new THREE.ExtrudeGeometry(rs, { depth: 0.064, bevelEnabled: false }); roofGeo.translate(0, 0, -0.032); roofGeo.rotateY(Math.PI / 2);
+  const roof = new THREE.Mesh(roofGeo, roofM); roof.position.y = 0.028; g.add(roof);
+  roof.scale.z = 0.85;
+  const ridge = new THREE.Mesh(new THREE.BoxGeometry(0.066, 0.003, 0.004), lam(0x1d2424)); ridge.position.y = 0.0405; g.add(ridge);
+  [-1, 1].forEach(s => [-1, 1].forEach(t => { const ch = new THREE.Mesh(new THREE.BoxGeometry(0.0018, 0.012, 0.0018), lam(0x1d2424)); ch.position.set(s * 0.031, 0.044, t * 0.003); ch.rotation.x = t * 0.5; g.add(ch); })); // 千木
+  const plaque = new THREE.Mesh(new THREE.PlaneGeometry(0.014, 0.008), new THREE.MeshBasicMaterial({ map: labelTex(C.DIORAMA.shrineName, 96, 56, '#1d1b22', '#ffd23a', '900 26px serif') }));
+  plaque.position.set(0, 0.03, 0.0245); g.add(plaque);
+  // しめ縄と紙垂
+  const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.0016, 0.0016, 0.04, 6), lam(0xe8d9a8)); rope.rotation.z = Math.PI / 2; rope.position.set(0, 0.027, 0.0195); g.add(rope);
+  const paper = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
+  [-0.012, 0, 0.012].forEach(x => { const sh = new THREE.Mesh(new THREE.PlaneGeometry(0.0025, 0.006), paper); sh.position.set(x, 0.0225, 0.0198); g.add(sh); });
+  // 鈴とさい銭箱
+  const bell = new THREE.Mesh(new THREE.SphereGeometry(0.0028, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffcf3a })); bell.position.set(0, 0.024, 0.021); g.add(bell);
+  const box = new THREE.Mesh(new THREE.BoxGeometry(0.016, 0.006, 0.006), wood); box.position.set(0, 0.009, 0.024); g.add(box);
+  // 石灯籠（左右）
+  [-0.028, 0.028].forEach(x => {
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.002, 0.0028, 0.014, 6), stone); post.position.set(x, 0.007, 0.03); g.add(post);
+    const hood = new THREE.Mesh(new THREE.ConeGeometry(0.0055, 0.004, 6), stone); hood.position.set(x, 0.0175, 0.03); g.add(hood);
+    const fire = glowSprite(0xffc46a, 0.014, 0.8); fire.position.set(x, 0.0145, 0.03); g.add(fire);
+  });
+  // おみくじ掛け（白いおみくじがたくさん結ばれている）
+  const rack = new THREE.Group(); rack.position.set(0.042, 0, 0.006);
+  [-0.009, 0.009].forEach(x => { const p = new THREE.Mesh(new THREE.CylinderGeometry(0.0008, 0.0008, 0.018, 5), wood); p.position.set(x, 0.009, 0); rack.add(p); });
+  [0.012, 0.017].forEach(y => { const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.0006, 0.0006, 0.02, 5), wood); bar.rotation.z = Math.PI / 2; bar.position.y = y; rack.add(bar);
+    for (let i = 0; i < 6; i++) { const k = new THREE.Mesh(new THREE.BoxGeometry(0.0018, 0.0035, 0.0012), paper); k.position.set(-0.0075 + i * 0.003, y - 0.0012, 0); k.rotation.z = (Math.random() - 0.5) * 0.4; rack.add(k); } });
+  g.add(rack);
+  g.scale.setScalar(1.25); // 大きめに
+  return g;
+}
+
+/* 大きな鳥居（明神鳥居）。道路をまたいで立ち、トラックがくぐる */
+function makeTorii(W = 0.078, H = 0.1) {          // W＝柱と柱の間、H＝高さ（道路をまたげる立体の鳥居）
+  const g = new THREE.Group();
+  const paint = canvasTex(64, 256, (x, w, h) => {          // 朱塗りの木目
+    x.fillStyle = '#d9431f'; x.fillRect(0, 0, w, h);
+    for (let i = 0; i < 40; i++) { x.fillStyle = `rgba(${Math.random() < .5 ? '255,140,90' : '120,20,0'},${Math.random() * .12})`; x.fillRect(Math.random() * w, 0, 1 + Math.random() * 2, h); }
+  });
+  const shu = new THREE.MeshLambertMaterial({ map: paint, emissive: 0x3a0804 }), black = lam(0x161210), rope = lam(0xc9b27a), white = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
+  const pr = W * 0.075;
+  [-1, 1].forEach(s => {
+    const p = new THREE.Mesh(new THREE.CylinderGeometry(pr, pr * 1.08, H, 14), shu); p.position.set(s * W / 2, H / 2, 0); g.add(p);
+    const b = new THREE.Mesh(new THREE.CylinderGeometry(pr * 1.35, pr * 1.35, H * 0.12, 14), black); b.position.set(s * W / 2, H * 0.06, 0); g.add(b); // 根巻き
+  });
+  const nuki = new THREE.Mesh(new THREE.BoxGeometry(W * 1.42, pr * 1.1, pr * 1.1), shu); nuki.position.y = H * 0.74; g.add(nuki);           // 貫
+  const shimaki = new THREE.Mesh(new THREE.BoxGeometry(W * 1.5, pr * 1.3, pr * 1.7), shu); shimaki.position.y = H * 0.93; g.add(shimaki); // 島木
+  const kg = new THREE.BoxGeometry(W * 1.85, pr * 1.3, pr * 2.1, 24, 1, 1);                                                                  // 笠木：両端が反り上がる
+  const kp = kg.attributes.position; for (let i = 0; i < kp.count; i++) { const xx = kp.getX(i) / (W * 0.925); kp.setY(i, kp.getY(i) + Math.pow(Math.abs(xx), 3) * H * 0.06); }
+  kg.computeVertexNormals();
+  const kasagi = new THREE.Mesh(kg, black); kasagi.position.y = H * 0.93 + pr * 1.3; g.add(kasagi);
+  const gaku = new THREE.Mesh(new THREE.BoxGeometry(W * 0.16, H * 0.15, pr * 0.6), black); gaku.position.set(0, H * 0.835, pr * 0.5); g.add(gaku); // 額
+  const ropeGeo = new THREE.TubeGeometry(new THREE.QuadraticBezierCurve3(new THREE.Vector3(-W / 2, H * 0.71, pr), new THREE.Vector3(0, H * 0.6, pr * 1.3), new THREE.Vector3(W / 2, H * 0.71, pr)), 16, pr * 0.32, 6);
+  g.add(new THREE.Mesh(ropeGeo, rope));                                                                                                       // しめ縄
+  [-0.3, -0.1, 0.1, 0.3].forEach(t => { const sh = new THREE.Mesh(new THREE.PlaneGeometry(W * 0.05, H * 0.12), white);                       // 紙垂
+    sh.position.set(t * W, H * 0.6 - H * 0.08 + Math.abs(t) * H * 0.05, pr * 1.3); g.add(sh); });
+  const glow = glowSprite(0xff6a3c, W * 1.6, 0.25); glow.position.y = H * 0.55; g.add(glow);
+  return g;
+}
+
+/* 道ぞいのお店（色と看板を変えて並べる） */
+function makeStreetShop(st) {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.026, 0.034), lam(new THREE.Color(st.wall).getHex())); body.position.y = 0.013; g.add(body);
+  const roof = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.033, 0.014, 4, 1).rotateY(Math.PI / 4), lam(new THREE.Color(st.roof).getHex())); roof.scale.z = 0.85; roof.position.y = 0.033; g.add(roof);
+  const noren = new THREE.Mesh(new THREE.PlaneGeometry(0.016, 0.009), new THREE.MeshBasicMaterial({ color: new THREE.Color(st.noren) })); noren.position.set(0, 0.016, 0.0171); g.add(noren);
+  const winL = new THREE.Mesh(new THREE.PlaneGeometry(0.009, 0.008), new THREE.MeshBasicMaterial({ color: 0xffd27a })); winL.position.set(-0.013, 0.012, 0.0171); g.add(winL);
+  const winR = winL.clone(); winR.position.x = 0.013; g.add(winR);
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(0.03, 0.008), new THREE.MeshBasicMaterial({ map: labelTex(st.name, 160, 44, '#fffaf0', '#1d1b22', '900 30px sans-serif') }));
+  sign.position.set(0, 0.028, 0.0178); g.add(sign);
+  const l = new THREE.Mesh(new THREE.SphereGeometry(0.0035, 8, 6), new THREE.MeshBasicMaterial({ color: 0xff5a3a })); l.scale.y = 1.3; l.position.set(0.021, 0.02, 0.019); g.add(l);
+  const gl = glowSprite(0xff7a4a, 0.018, 0.55); gl.position.copy(l.position); g.add(gl);
+  return g;
+}
+
+function buildDiorama(center) {
+  const DI = C.DIORAMA, H = 0.001;
+  const g = new THREE.Group(); g.position.copy(center); g.scale.setScalar(0.001);
+  const toCam = Math.atan2(-center.z, -center.x);               // グラスから見た「お客さん側」の角度
+  const polar = (a, r, y = H) => new THREE.Vector3(Math.cos(a) * r, y, Math.sin(a) * r);
+  const faceCam = (obj) => { const wp = obj.position.clone().add(center); obj.rotation.y = Math.atan2(-wp.x, -wp.z); }; // 正面をこちらへ
+  // 地面の台はなし：道路と建物が、本物のテーブルの上に直接立つ
+  // ローカル座標：x＝画面の右方向、f＝お客さん（カメラ）に向かう方向
+  const F = new THREE.Vector3(Math.cos(toCam), 0, Math.sin(toCam)), Rv = new THREE.Vector3(Math.sin(toCam), 0, -Math.cos(toCam));
+  const lp = (x, f, y = H) => Rv.clone().multiplyScalar(x).addScaledVector(F, f).setY(y);
+  // 道路：陸上トラック形（手前と奥がまっすぐ、左右が半円）
+  const Rr = DI.roadRadius, Ls = DI.roadStraight, rw = 0.04;
+  const L = 4 * Ls + 2 * Math.PI * Rr;                               // 一周の長さ
+  const path = (d, off = 0) => {                                     // 道のり d の位置 [x, f] と外向きの向き [nx, nf]
+    d = ((d % L) + L) % L; const r = Rr + off, s1 = 2 * Ls, s2 = s1 + Math.PI * Rr, s3 = s2 + 2 * Ls;
+    if (d < s1) return [-Ls + d, r, 0, 1];                                            // 手前の直線（左→右）
+    if (d < s2) { const t = (d - s1) / Rr; return [Ls + r * Math.sin(t), r * Math.cos(t), Math.sin(t), Math.cos(t)]; } // 右のカーブ
+    if (d < s3) return [Ls - (d - s2), -r, 0, -1];                                    // 奥の直線（右→左）
+    const t = (d - s3) / Rr; return [-Ls - r * Math.sin(t), -r * Math.cos(t), -Math.sin(t), -Math.cos(t)]; // 左のカーブ
+  };
+  const ribbon = (off, width, color, y) => {                         // 道のりに沿った帯（道路・白線）
+    const n = 160, pos = [], idx = [];
+    for (let i = 0; i <= n; i++) { const [x, f, nx, nf] = path(L * i / n, off);
+      const o = lp(x + nx * width / 2, f + nf * width / 2, y), q = lp(x - nx * width / 2, f - nf * width / 2, y); pos.push(o.x, o.y, o.z, q.x, q.y, q.z);
+      if (i < n) idx.push(i * 2, i * 2 + 1, i * 2 + 2, i * 2 + 1, i * 2 + 3, i * 2 + 2); }
+    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setIndex(idx); geo.computeVertexNormals();
+    const m = new THREE.Mesh(geo, color.isMaterial ? color : new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide })); g.add(m); return m;
+  };
+  ribbon(0, rw, lam(0x4a4d55, { side: THREE.DoubleSide }), H + 0.0008);
+  [-rw / 2 + 0.002, rw / 2 - 0.002].forEach(o => ribbon(o, 0.0016, 0xf2f2f2, H + 0.0012));
+  const N = Math.round(L / 0.016), dash = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.009, 0.0016).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffd23a }), N);
+  const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0), one = new THREE.Vector3(1, 1, 1);
+  for (let i = 0; i < N; i++) { const [x, f, nx, nf] = path(L * i / N); const nw = Rv.clone().multiplyScalar(nx).addScaledVector(F, nf);
+    q.setFromAxisAngle(up, Math.atan2(-nw.z, nw.x) + Math.PI / 2); m4.compose(lp(x, f, H + 0.0014), q, one); dash.setMatrixAt(i, m4); }
+  g.add(dash);
+
+  // 建物の配置（ご指定どおり）
+  //   左のカーブの外：物流倉庫とお店の並び（奥→手前に、カーブに沿って横にくっつけて並ぶ）
+  //   右のカーブの外：名古屋城
+  //   手前の直線：道路をまたぐ大鳥居と、その手前に速達生神社
+  //   奥の直線（グラスのうしろ）は空ける（建物が本物のグラスにかぶらないように）
+  const pops = [];
+  const A = DI.assets || {};
+  const faceFront = (obj) => { obj.rotation.y = Math.atan2(F.x, F.z); };    // 正面をお客さん側へ
+  const place = (obj, x, f, w, d) => { obj.position.copy(lp(x, f)); faceFront(obj); g.add(obj); pops.push(obj);
+    g.add(makeShadow(obj.position, obj.rotation.y, w, d)); return obj; };   // テーブルに落ちる影で「立っている」感じを出す
+  const asp = { castle: 0.83, izakaya: 0.92, warehouse: 1.75, shrine: 1.05, street: [1.15, 0.88, 1.09, 0.85] }; // 画像の横÷縦
+  const st = DI.street || [];
+  const item = (spec, builder, aspect) => ({ spec, builder, w: (spec && spec.file ? spec.height * aspect : 0.06) * 0.9 });
+  const streetItem = (i) => item({ file: (A.street || [])[i], height: DI.shopHeight }, () => makeStreetShop(st[i]), asp.street[i]);
+  // 左のカーブの外に沿って並べる（奥 → 左 → 手前）
+  const Ro = Rr + rw / 2 + 0.03;
+  const leftItems = [item(A.shop, makeShop, asp.izakaya), streetItem(3), streetItem(1), streetItem(0), streetItem(2), item(A.warehouse, makeWarehouse, asp.warehouse)]; // 奥：居酒屋 … 手前：物流倉庫（最初のお届けが短く済む順）
+  let phi = 0.15; const placed = [];
+  leftItems.forEach(it => {
+    phi += (it.w / 2) / (Ro + it.w * 0.25);
+    const r = Ro + it.w * 0.25;
+    placed.push(place(assetOr(it.spec, it.builder), -Ls - r * Math.sin(phi), -r * Math.cos(phi), it.w, it.w * 0.6));
+    phi += (it.w / 2) / (Ro + it.w * 0.25);
+  });
+  const shop = placed[0], wh = placed[placed.length - 1];
+  // 右のカーブの外：名古屋城
+  if (DI.landmark) { const c = item(A.castle, makeNagoyaCastle, asp.castle); place(assetOr(c.spec, c.builder), Ls + Rr + rw / 2 + c.w * 0.42, -0.015, c.w, c.w * 0.8); }
+  // 手前の直線：大鳥居（立体）が道路をまたぎ、手前に速達生神社
+  if (DI.shrine) {
+    const tx = 0.0, tilt = 0.8;                                       // 鳥居を斜め(約45°)に置いて、正面から見ても鳥居の形がわかるように
+    const torii = makeTorii((rw + 0.03) / Math.cos(tilt), DI.toriiHeight || 0.11);
+    torii.position.copy(lp(tx, Rr)); torii.rotation.y = Math.atan2(-F.z, F.x) + tilt; // 柱が道路の両側に立ち、トラックが下をくぐる
+    g.add(torii); pops.push(torii);
+    g.add(makeShadow(torii.position, torii.rotation.y + Math.PI / 2, 0.02, rw + 0.06));
+    const sh = item(A.shrine, makeShrine, asp.shrine);
+    place(assetOr(sh.spec, sh.builder), Ls + 0.02, Rr + rw / 2 + sh.w * 0.4, sh.w, sh.w * 0.7); // 神社は手前の右（グラスを隠さないように）
+  }
+  // トラックが止まる場所（道のり）：建物にいちばん近い道路の位置
+  const nearestD = (obj) => { const v = obj.position.clone(); let best = 0, bd = 1e9;
+    for (let i = 0; i < 400; i++) { const d = L * i / 400, [x, f] = path(d); const dd = lp(x, f).distanceTo(v); if (dd < bd) { bd = dd; best = d; } } return best; };
+  const aW = nearestD(wh), aS = nearestD(shop);
+  // 樽・吹き出し
+  const keg = makeKeg(); g.add(keg);
+  const talkW = makeTalk(''), talkS = makeTalk('');
+  talkW.position.copy(wh.position).add(new THREE.Vector3(0, 0.07, 0)); talkS.position.copy(shop.position).add(new THREE.Vector3(0, 0.075, 0));
+  g.add(talkW, talkS);
+  scene.add(g);
+  pops.forEach((o, i) => { o.userData.base = o.scale.x; o.userData.delay = 0.25 + i * 0.06; o.scale.setScalar(0.001); });
+  return { g, H, aW, aS, wh, shop, keg, talkW, talkS, pops, t: 0, kegAnim: null, firstDone: false,
+    L, pathWorld: (d, off) => { const [x, f] = path(d, off); return lp(x, f).add(g.position); } };
+}
+
+function sayTalk(sp, text, sec = 1.8, bg = '#ffffff', fg = '#1d1b22') {
+  const old = sp.material.map; sp.material.map = makeTalk(text, bg, fg).material.map; sp.material.needsUpdate = true; old && old.dispose();
+  sp.userData.t = sec;
+}
+function kegFly(fromLocal, toLocal) { diorama.kegAnim = { a: fromLocal.clone(), b: toLocal.clone(), t: 0 }; diorama.keg.visible = true; }
+function truckLocal() { return truck.sprite.position.clone().sub(diorama.g.position).add(new THREE.Vector3(0, truck.H * 0.7, 0)); }
+function doorLocal(b) { return b.position.clone().add(b.userData.door.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), b.rotation.y)); }
+
+function updateDiorama(dt) {
+  const d = diorama; if (!d) return;
+  d.t += dt;
+  d.g.scale.setScalar(Math.max(0.001, easeOutBack(Math.min(1, d.t / 0.8))));  // ジオラマがぽんっと広がる
+  d.pops.forEach(o => { const k = THREE.MathUtils.clamp((d.t - o.userData.delay) / 0.4, 0, 1); o.scale.setScalar(Math.max(0.001, easeOutBack(k) * o.userData.base));
+    if (o.userData.tick) o.userData.tick(d.t); });                 // のれん・ちょうちん等のうごき
+  [d.talkW, d.talkS].forEach(sp => { sp.userData.t -= dt; sp.material.opacity = THREE.MathUtils.clamp(sp.userData.t * 3, 0, 1); });
+  if (d.kegAnim) {                                                   // 樽がぴょんと飛ぶ
+    const k = Math.min(1, (d.kegAnim.t += dt) / 0.6);
+    d.keg.position.lerpVectors(d.kegAnim.a, d.kegAnim.b, k); d.keg.position.y += Math.sin(k * Math.PI) * 0.035;
+    d.keg.rotation.z = k * Math.PI * 2;
+    if (k >= 1) { d.kegAnim = null; d.keg.visible = false; }
+  }
+}
+
+// トラックの運行：物流センターで積む → 手前をまわって → お店に届ける → うしろを通って戻る（くり返し）
+function startDioramaDelivery(center) {
+  if (!diorama) diorama = buildDiorama(center);
+  if (!truck) {
+    truck = createTruck(center); truck.a = diorama.aW; truck.stopT = 1.4; truck.off = -0.009;           // 内側の車線
+    if (C.DIORAMA.trucks >= 2) { truck2 = createTruck(center); truck2.dir = -1; truck2.off = 0.009; truck2.a = diorama.aS + diorama.L * 0.3; truck2.speed *= 0.9; } // 外側の車線を反対まわり
+  }
+  const D = diorama, DI = C.DIORAMA;
+  const below = (a0) => a0 + D.L * Math.floor((truck.a - 0.01 - a0) / D.L); // 今より手前（減る方向）で一番近い停車位置
+  const toShop = () => {
+    truck.target = below(D.aS);
+    truck.onArrive = () => {
+      truck.stopT = 1.8;
+      kegFly(truckLocal(), doorLocal(D.shop));
+      sayTalk(D.talkS, DI.deliverText, 1.8, '#e5322d', '#ffffff');
+      if (navigator.vibrate) navigator.vibrate(30);
+      if (state.mode === 'delivering' && !D.delivered) {           // 最初のお届けのあと、おみくじが出てくる
+        D.delivered = true;
+        setGuide('🍺 できたての生ビールがお店に到着！', 'つぎは、あなたのグラスに注目…');
+        setTimeout(() => { if (state.mode !== 'delivering') return;
+          if (C.REVEAL.style === 'bubble') startFoam(glassPos.clone());
+          else launchParcel(truck.sprite.position.clone().add(new THREE.Vector3(0, truck.H * 0.75, 0)));
+        }, 1100);
+      }
+      toWarehouse();
+    };
+  };
+  const toWarehouse = () => {
+    setTimeout(() => {
+      truck.target = below(D.aW);
+      truck.onArrive = () => {
+        truck.stopT = 1.6;
+        kegFly(doorLocal(D.wh), truckLocal());
+        sayTalk(D.talkW, DI.loadText, 1.6);
+        toShop();
+      };
+    }, 0);
+  };
+  if (!D.started) {
+    D.started = true;
+    sayTalk(D.talkW, DI.departText, 2.0, '#ffc53d', '#2a1600');
+    setGuide('🚚 速達生の物流センターから出発！', '生ビールをお店まで届けるよ');
+    toShop();
+  } else {                                                           // 「もう一度見る」：トラックはそのまま、グラスから
+    setGuide('🍺 グラスに注目…');
+    setTimeout(() => { if (state.mode !== 'delivering') return;
+      if (C.REVEAL.style === 'bubble') startFoam(glassPos.clone()); else launchParcel(glassPos.clone()); }, 900);
+  }
 }
 
 /* 小包（段ボール箱）：基本図形＋手描きのテクスチャ */
@@ -1459,7 +2377,7 @@ function makeBubble() {
   [[0, 0, 0, 0.022], [0.018, -0.004, 0.006, 0.016], [-0.017, -0.003, -0.004, 0.017], [0.004, -0.004, 0.018, 0.014], [-0.004, -0.003, -0.017, 0.015]].forEach(([x, y, z, r]) => {
     const m = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 8), new THREE.MeshLambertMaterial({ color: 0xfffaf0, emissive: 0x2a2418 })); m.position.set(x, y, z); cap.add(m);
   });
-  cap.position.y = R * 2 - 0.006; box.add(cap);
+  cap.position.y = R * 2 - 0.006; cap.visible = false; box.add(cap); // 泡のフタは付けない
   // 中に浮かぶ、おみくじ（動画）。いつもこちらを向く板に貼る
   const card = makeOmikujiCard(R * 1.9);
   card.position.y = R; root.add(card);
@@ -1607,7 +2525,7 @@ function updateFireworks(dt) {
 function updateLabels() {
   const label = $('#tapLabel'), hint = $('#dirHint');
   let target = null, name = '';
-  if (parcel && (state.mode === 'waitTap' || state.mode === 'delivering')) { target = parcel.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, parcel.userData.S * parcel.scale.y * 1.1, 0)); name = '小包'; }
+  if (parcel && (state.mode === 'waitTap' || state.mode === 'delivering')) { target = parcel.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, parcel.userData.S * parcel.scale.y * 1.1, 0)); name = parcel.userData.kind === 'bubble' ? 'おみくじの泡' : '小包'; }
   else if (truck && state.mode === 'delivering') { target = truck.sprite.position.clone(); name = 'トラック'; }
   if (!target) { label.classList.add('hidden'); hint.classList.add('hidden'); return; }
   const local = target.clone().applyMatrix4(camera.matrixWorldInverse);
@@ -1716,6 +2634,10 @@ function loop(now) {
   updateTruck(dt);
   updateParcel(dt, time);
   updateFoam(dt);
+  updateDiorama(dt);
+  updateRoomMovers(dt, time);
+  updateFoamClouds(time, dt);
+  updateRouteArrows(dt);
   updateFireworks(dt);
   updateLabels();
   renderer.render(scene, camera);
